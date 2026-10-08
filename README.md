@@ -15,6 +15,14 @@ author email sayno@korea.com.
 - `blender/compose_moods.py` puts the transparent renders on paper-coloured
   backgrounds and makes a comparison sheet.
 - `blender/study.blend` is the generated scene; open it in Blender to edit by hand.
+- `blender/export_glb.py` exports the study to `web/assets/study.glb`, one named mesh per
+  clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...).
+- `web/study.html` is the page: three.js (r170) and GSAP from public CDNs, time-of-day
+  lighting, click an object to read its passage.
+- `web/data/passages.json` holds every quoted passage with its page number.
+  `tools/check_passages.py <book.txt> web/data/passages.json` checks each one word for word
+  against the book text (the book itself is not in this repository).
+- `tools/build_web.py` inlines the model and passages into `dist/study.html` and `dist/index.html`.
 
 ## Running
 
@@ -23,4 +31,6 @@ python3 -m pip install bpy pillow
 python3 blender/build_study.py --save blender/study.blend
 python3 blender/build_study.py --mood dusk --out renders/hi_dusk.png --samples 96 --res 1600x1200
 python3 blender/compose_moods.py renders renders/moods
+python3 blender/export_glb.py web/assets/study.glb
+python3 tools/build_web.py   # then open dist/index.html
 ```

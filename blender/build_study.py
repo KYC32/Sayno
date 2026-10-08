@@ -326,7 +326,7 @@ def build_cabinet():
 def build_wall_things():
     parts = []
     # checklist pinned above the desk (p.143)
-    parts.append(box("checklist", (0.34, 0.01, 0.46), (0.1, ROOM / 2 - 0.01, 1.75), mat("paper"), bevel=0))
+    parts.append(box("checklist_paper", (0.34, 0.01, 0.46), (0.1, ROOM / 2 - 0.01, 1.75), mat("paper"), bevel=0))
     for j in range(6):
         parts.append(box(f"check_box_{j}", (0.03, 0.004, 0.03), (-0.02, ROOM / 2 - 0.018, 1.9 - j * 0.06),
                          mat("ink"), bevel=0))
@@ -396,7 +396,7 @@ def build_reading_corner():
 
 
 def build_decor():
-    rug = [box("rug", (2.6, 1.8, 0.02), (0.7, -0.6, 0.01), mat("rug", rough=1.0), bevel=0.01),
+    rug = [box("rug_outer", (2.6, 1.8, 0.02), (0.7, -0.6, 0.01), mat("rug", rough=1.0), bevel=0.01),
            box("rug_inner", (2.3, 1.5, 0.022), (0.7, -0.6, 0.012), mat("rug_edge", rough=1.0), bevel=0),
            box("rug_core", (2.1, 1.3, 0.024), (0.7, -0.6, 0.013), mat("rug", rough=1.0), bevel=0)]
     group("rug", rug)

@@ -1,0 +1,630 @@
+<title>세이노의 서재</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&display=swap">
+<style>
+/* Layout: the study fills the screen; paper sheets slide in over it like notes laid on a desk. */
+:root {
+  --ground: #EEE2D2;        /* changes with the time of day */
+  --paper: #F7F1E3;
+  --paper-edge: #E4D8BF;
+  --ink: #2A2420;
+  --ink-soft: #6B5D4F;
+  --rule: #B9C3D6;
+  --stamp: #A3362A;
+  --serif: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --book: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --hand: "Nanum Pen Script", "Gowun Batang", cursive;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden; background: var(--ground); color: var(--ink);
+  font-family: var(--serif); transition: background-color 1.2s ease;
+}
+#scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+.masthead {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 2; pointer-events: none;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 0;
+}
+.masthead > * { pointer-events: auto; }
+.name { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.02em; }
+.name small { display: block; margin-top: 4px; font-size: 0.82rem; font-weight: 400; color: var(--ink-soft); letter-spacing: 0; }
+body.dark .name, body.dark .name small, body.dark .times button { color: #EDE4D3; }
+body.dark .times button[aria-pressed="true"] { border-color: #EDE4D3; }
+
+.times { display: flex; gap: 4px; align-items: center; font-size: 0.88rem; }
+.times button {
+  font: inherit; color: var(--ink); background: none; border: 0; border-bottom: 1.5px solid transparent;
+  padding: 4px 6px; cursor: pointer;
+}
+.times button[aria-pressed="true"] { border-bottom-color: var(--ink); }
+.times button:focus-visible, .sheet button:focus-visible, .shelf-list button:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+
+.tag {
+  position: fixed; z-index: 3; pointer-events: none; padding: 4px 10px 5px;
+  background: var(--paper); border: 1px solid var(--paper-edge); font-size: 0.85rem;
+  box-shadow: 0 2px 0 rgba(42, 36, 32, 0.12); transform: translate(-50%, -140%); white-space: nowrap;
+}
+
+.browse {
+  position: fixed; left: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 2;
+  font: inherit; font-size: 0.9rem; padding: 8px 14px; cursor: pointer;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--paper-edge);
+  box-shadow: 0 2px 0 rgba(42, 36, 32, 0.15);
+}
+.shelf-list {
+  position: fixed; left: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); z-index: 3;
+  margin: 0; padding: 8px 0; list-style: none; background: var(--paper); border: 1px solid var(--paper-edge);
+  box-shadow: 0 6px 18px rgba(42, 36, 32, 0.18); max-height: 60vh; overflow: auto;
+}
+.shelf-list button {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 0.92rem; color: var(--ink);
+  background: none; border: 0; padding: 7px 18px; cursor: pointer;
+}
+.shelf-list button:hover { background: var(--paper-edge); }
+
+/* paper sheet */
+.sheet {
+  position: fixed; z-index: 4; top: 0; right: 0; bottom: 0; width: min(440px, 100%);
+  display: flex; flex-direction: column; background: var(--paper); color: var(--ink);
+  box-shadow: -10px 0 30px rgba(42, 36, 32, 0.22);
+  background-image: linear-gradient(90deg, rgba(42, 36, 32, 0.05), transparent 18px);
+  transform: translateX(105%); transition: transform 0.55s cubic-bezier(.2, .8, .2, 1);
+}
+.sheet.open { transform: none; }
+.sheet-inner {
+  flex: 1; overflow: auto; padding: calc(env(safe-area-inset-top, 0px) + 28px) 32px calc(env(safe-area-inset-bottom, 0px) + 28px);
+  display: flex; flex-direction: column; gap: 20px;
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sheet h2 { margin: 0; font-size: 1.25rem; text-wrap: balance; }
+.close {
+  font: inherit; font-size: 0.88rem; color: var(--ink-soft); background: none; border: 0;
+  border-bottom: 1px solid currentColor; padding: 2px 0; cursor: pointer;
+}
+.quote { margin: 0; font-family: var(--book); font-size: 1.04rem; line-height: 1.95; word-break: keep-all; }
+.quote p { margin: 0; text-indent: 1em; }
+.cite { margin-top: 8px; font-family: var(--serif); font-size: 0.82rem; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+.note { margin: 0; font-size: 0.92rem; line-height: 1.75; color: var(--ink-soft); word-break: keep-all; }
+.source { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--paper-edge); font-size: 0.78rem; color: var(--ink-soft); line-height: 1.6; }
+.source span { user-select: all; }
+
+.books { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.books li { display: grid; gap: 2px; }
+.books .bt { font-family: var(--book); font-weight: 700; }
+.books .ba { font-size: 0.84rem; color: var(--ink-soft); }
+.books .bn { font-family: var(--book); font-size: 0.95rem; }
+
+.daily-date { display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+.daily-date .d { font-size: 3.2rem; line-height: 1; font-weight: 700; color: var(--stamp); }
+.daily-date .m { font-size: 1rem; color: var(--ink-soft); }
+
+/* letter */
+.letter-paper {
+  position: relative; min-height: 220px; padding: 6px 4px 0;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--rule) 35px 36px);
+}
+.letter-paper textarea {
+  width: 100%; min-height: 216px; box-sizing: border-box; resize: vertical; border: 0; outline: 0; background: transparent;
+  font-family: var(--hand); font-size: 1.6rem; line-height: 36px; color: #24324F; padding: 0;
+}
+.letter-paper textarea::placeholder { color: #9AA3B5; }
+.seal {
+  align-self: flex-start; font: inherit; font-size: 0.95rem; padding: 9px 18px; cursor: pointer;
+  color: var(--paper); background: var(--stamp); border: 0; box-shadow: 0 2px 0 rgba(42, 36, 32, 0.25);
+}
+.seal:disabled { opacity: 0.45; cursor: default; }
+.sent { margin: 0; padding: 12px 14px; border: 1px dashed var(--ink-soft); font-size: 0.92rem; line-height: 1.7; }
+
+.loading {
+  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--ground);
+  font-size: 1rem; color: var(--ink-soft); transition: opacity 0.8s ease;
+}
+.loading.gone { opacity: 0; pointer-events: none; }
+.nogl { max-width: 30em; padding-inline: 20px; line-height: 1.8; text-align: center; }
+
+@media (max-width: 640px) {
+  body.reading .masthead, body.reading .browse { opacity: 0; pointer-events: none; }
+  .masthead, .browse { transition: opacity 0.4s ease; }
+  .sheet { top: auto; left: 0; width: 100%; max-height: 72%; transform: translateY(105%);
+           box-shadow: 0 -10px 30px rgba(42, 36, 32, 0.22); background-image: none; }
+  .sheet-inner { padding-inline: 20px; }
+  .name { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet, body, .loading { transition: none; }
+}
+</style>
+
+<canvas id="scene" aria-label="세이노의 서재 3D 장면"></canvas>
+
+<header class="masthead">
+  <h1 class="name">세이노의 서재<small>주인은 잠시 자리를 비웠습니다. 책상 위 편지지에 고민을 적어 보세요.</small></h1>
+  <div class="times" role="group" aria-label="서재의 시간">
+    <button type="button" data-mood="morning" id="t-morning">아침</button>
+    <button type="button" data-mood="dusk" id="t-dusk">해 질 녘</button>
+    <button type="button" data-mood="night" id="t-night">밤</button>
+  </div>
+</header>
+
+<div class="tag" id="tag" hidden></div>
+
+<button type="button" class="browse" id="browse" aria-expanded="false" aria-controls="shelf">둘러보기</button>
+<ul class="shelf-list" id="shelf" hidden></ul>
+
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <div class="sheet-inner" id="sheet-inner"></div>
+</aside>
+
+<div class="loading" id="loading"><span id="loading-text">서재 문을 여는 중입니다</span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script id="passages" type="application/json">/*__PASSAGES__*/</script>
+<script id="glb" type="text/plain">/*__GLB__*/</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const DATA = JSON.parse(document.getElementById("passages").textContent);
+const SOURCE = "세이노의 가르침 (데이원, 2023)";
+const EMAIL = "sayno@korea.com";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const gsap = window.gsap;
+const T = (d) => (reduceMotion ? 0 : d);
+
+const store = {
+  get(k) { try { return localStorage.getItem("sayno-study:" + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("sayno-study:" + k, v); } catch { /* storage unavailable */ } },
+};
+
+// ---------------------------------------------------------------- renderer, camera, controls
+const canvas = document.getElementById("scene");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+} catch (e) {
+  document.getElementById("loading").innerHTML =
+    '<p class="nogl">이 기기에서는 3D 화면을 띄울 수 없습니다. 다른 브라우저나 기기에서 열어 주세요.</p>';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+// Blender's camera, converted to y-up: (x, y, z) -> (x, z, -y)
+const HOME_POS = new THREE.Vector3(9.5, 8.2, 9.0);
+const HOME_TARGET = new THREE.Vector3(-0.1, 1.0, -0.4);
+const VIEW_W = 8.2, VIEW_H = 6.15;
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 60);
+camera.position.copy(HOME_POS);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(HOME_TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minZoom = 0.85;
+controls.maxZoom = 2.6;
+controls.rotateSpeed = 0.5;
+controls.update();
+const homeAz = controls.getAzimuthalAngle(), homePolar = controls.getPolarAngle();
+controls.minAzimuthAngle = homeAz - 0.4; controls.maxAzimuthAngle = homeAz + 0.4;
+controls.minPolarAngle = homePolar - 0.18; controls.maxPolarAngle = homePolar + 0.12;
+
+function resize() {
+  const w = innerWidth, h = innerHeight, a = w / h;
+  let vw = VIEW_W, vh = VIEW_H;
+  if (a > VIEW_W / VIEW_H) vw = vh * a; else vh = vw / a;
+  camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+addEventListener("resize", resize);
+resize();
+
+// ---------------------------------------------------------------- lights
+const hemi = new THREE.HemisphereLight(0xffffff, 0x886644, 1);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 0.5, far: 30 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+sun.target.position.set(0.3, 0, -0.5);
+scene.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+fill.position.set(6, 7, 7);
+scene.add(fill);
+const deskLamp = new THREE.SpotLight(0xffb36b, 6, 6, 1.0, 0.6, 2);
+deskLamp.position.set(-0.15, 1.28, -2.43);
+deskLamp.target.position.set(-0.05, 0.6, -2.1);
+scene.add(deskLamp, deskLamp.target);
+const deskGlow = new THREE.PointLight(0xffaa66, 1.6, 5, 2);
+deskGlow.position.set(-0.15, 1.3, -2.43);
+scene.add(deskGlow);
+const floorLamp = new THREE.PointLight(0xffb56e, 4, 7, 2);
+floorLamp.position.set(2.0, 1.45, 0.4);
+scene.add(floorLamp);
+
+// sky seen through the window
+const sky = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+sky.position.set(1.55, 1.85, -3.24);
+sky.castShadow = false;
+scene.add(sky);
+
+const MOODS = {
+  morning: { ground: "#E8ECE8", sky: "#CFE3F4", hemiSky: "#F4F6F6", hemiGround: "#C2A78C", hemi: 1.8, exposure: 1.15,
+             sun: "#FFF3E0", sunI: 4.2, elev: 36, fill: 0.8, fillC: "#F2F5FF", lamps: 0, dark: false, dust: 0.4 },
+  dusk:    { ground: "#EEE0CD", sky: "#F39A5E", hemiSky: "#F6E1C8", hemiGround: "#7F5A40", hemi: 1.25, exposure: 1.15,
+             sun: "#FFA866", sunI: 4.0, elev: 21, fill: 0.4, fillC: "#FFE3C4", lamps: 1, dark: false, dust: 0.7 },
+  night:   { ground: "#262A3A", sky: "#1C2846", hemiSky: "#4A5680", hemiGround: "#1E1914", hemi: 0.28, exposure: 1.0,
+             sun: "#9DB2FF", sunI: 0.3, elev: 42, fill: 0.06, fillC: "#7F93CC", lamps: 1.3, dark: true, dust: 0.5 },
+};
+const lampState = { desk: true };
+let mood = null;
+
+function sunPosition(elev) {
+  // Light comes in through the window: travelling toward +z (the open side), slightly toward -x.
+  const d = new THREE.Vector3(-0.35, -Math.tan(THREE.MathUtils.degToRad(elev)), 1).normalize();
+  return sun.target.position.clone().sub(d.multiplyScalar(14));
+}
+
+const lampMats = { deskBulb: null, deskShade: null, floorBulb: null, floorShade: null };
+
+function applyLamps(m, dur) {
+  const k = m.lamps;
+  const deskOn = k > 0 && lampState.desk;
+  gsap.to(deskLamp, { intensity: deskOn ? 7 * k : 0, duration: dur });
+  gsap.to(deskGlow, { intensity: deskOn ? 1.8 * k : 0, duration: dur });
+  gsap.to(floorLamp, { intensity: k > 0 ? 3.5 * k : 0, duration: dur });
+  const glow = (mat, on, s) => mat && gsap.to(mat, { emissiveIntensity: on ? s : 0, duration: dur });
+  glow(lampMats.deskBulb, deskOn, 6);
+  glow(lampMats.deskShade, deskOn, 0.25);
+  glow(lampMats.floorBulb, k > 0, 6);
+  glow(lampMats.floorShade, k > 0, 0.55 * k);
+}
+
+function setMood(name, instant) {
+  mood = name;
+  const m = MOODS[name], dur = instant ? 0 : T(1.4);
+  document.body.style.setProperty("--ground", m.ground);
+  document.documentElement.style.setProperty("--ground", m.ground);
+  document.body.classList.toggle("dark", m.dark);
+  const col = (c) => new THREE.Color(c);
+  const tweenColor = (target, c) => { const to = col(c); gsap.to(target, { r: to.r, g: to.g, b: to.b, duration: dur }); };
+  tweenColor(hemi.color, m.hemiSky); tweenColor(hemi.groundColor, m.hemiGround);
+  tweenColor(sun.color, m.sun); tweenColor(fill.color, m.fillC); tweenColor(sky.material.color, m.sky);
+  const p = sunPosition(m.elev);
+  gsap.to(sun.position, { x: p.x, y: p.y, z: p.z, duration: dur });
+  gsap.to(sun, { intensity: m.sunI, duration: dur });
+  gsap.to(hemi, { intensity: m.hemi, duration: dur });
+  gsap.to(fill, { intensity: m.fill, duration: dur });
+  gsap.to(renderer, { toneMappingExposure: m.exposure, duration: dur });
+  gsap.to(dust.material, { opacity: m.dust, duration: dur });
+  applyLamps(m, dur);
+  document.querySelectorAll(".times button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mood === name)));
+}
+
+function moodForNow() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 15) return "morning";
+  if (h >= 15 && h < 19) return "dusk";
+  return "night";
+}
+
+// ---------------------------------------------------------------- dust in the light
+const DUST = 140;
+const dustGeo = new THREE.BufferGeometry();
+const dustBase = new Float32Array(DUST * 3);
+for (let i = 0; i < DUST; i++) {
+  dustBase[i * 3] = THREE.MathUtils.randFloat(-2.4, 2.8);
+  dustBase[i * 3 + 1] = THREE.MathUtils.randFloat(0.3, 2.7);
+  dustBase[i * 3 + 2] = THREE.MathUtils.randFloat(-2.8, 1.6);
+}
+dustGeo.setAttribute("position", new THREE.BufferAttribute(dustBase.slice(), 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  color: 0xfff1d6, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0.6, depthWrite: false,
+}));
+dust.visible = !reduceMotion;
+if (innerWidth < 640) dust.material.size = 1.5;
+scene.add(dust);
+
+// ---------------------------------------------------------------- the study model
+const INTERACTIVE = Object.keys(DATA.objects);
+const pickables = [];
+const groups = {};
+
+function decodeGlb() {
+  const b64 = document.getElementById("glb").textContent.trim();
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+new GLTFLoader().parse(decodeGlb(), "", (gltf) => {
+  const root = gltf.scene;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach((mt) => { mt.flatShading = true; });
+  });
+  for (const name of INTERACTIVE) {
+    const obj = root.getObjectByName(name);
+    if (!obj) continue;
+    // own materials, so highlighting one object leaves the others alone
+    obj.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+      o.userData.group = name;
+      pickables.push(o);
+    });
+    groups[name] = obj;
+  }
+  // lamp materials, so the bulbs and shades can glow
+  const findMat = (objName, matName) => {
+    let found = null;
+    root.getObjectByName(objName)?.traverse((o) => {
+      if (!o.isMesh) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.name.startsWith(matName)) found = m; });
+    });
+    if (found) found.emissive = new THREE.Color(0xffb565);
+    return found;
+  };
+  lampMats.deskBulb = findMat("lamp", "bulb");
+  lampMats.deskShade = findMat("lamp", "lampshade");
+  lampMats.floorBulb = findMat("floor_lamp", "bulb");
+  lampMats.floorShade = findMat("floor_lamp", "shade2");
+  scene.add(root);
+
+  const saved = store.get("mood");
+  setMood(MOODS[saved] ? saved : moodForNow(), true);
+  buildShelfList();
+  intro();
+}, (err) => {
+  document.getElementById("loading-text").textContent = "서재를 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.";
+  console.error(err);
+});
+
+function intro() {
+  const loading = document.getElementById("loading");
+  loading.classList.add("gone");
+  camera.zoom = reduceMotion ? 1 : 0.72;
+  camera.updateProjectionMatrix();
+  gsap.to(camera, { zoom: 1, duration: T(2.4), ease: "power2.out", onUpdate: () => camera.updateProjectionMatrix() });
+}
+
+// ---------------------------------------------------------------- picking
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const tag = document.getElementById("tag");
+let hovered = null, focused = null, downAt = null;
+
+function pick(ev) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(scene.children, true).find((h) => h.object.isMesh && h.object !== sky);
+  return hit && hit.object.userData.group ? hit.object.userData.group : null;
+}
+
+function setHover(name) {
+  if (name === hovered) return;
+  if (hovered) highlight(hovered, false);
+  hovered = name;
+  if (name) highlight(name, true);
+  canvas.style.cursor = name ? "pointer" : "";
+}
+
+function highlight(name, on) {
+  groups[name]?.traverse((o) => {
+    if (!o.isMesh) return;
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
+      if (m === lampMats.deskBulb || m === lampMats.deskShade) return;
+      if (!m.userData.baseEmissive) m.userData.baseEmissive = m.emissive.clone();
+      m.emissive.copy(on ? new THREE.Color(0x3a2a14) : m.userData.baseEmissive);
+    });
+  });
+  const g = groups[name];
+  if (g && !reduceMotion) gsap.to(g.position, { y: (g.userData.baseY ??= g.position.y) + (on ? 0.025 : 0), duration: 0.25 });
+}
+
+canvas.addEventListener("pointermove", (ev) => {
+  if (ev.pointerType !== "mouse") return;
+  const name = pick(ev);
+  setHover(name);
+  if (name) {
+    tag.textContent = DATA.objects[name].label;
+    tag.style.left = ev.clientX + "px";
+    tag.style.top = ev.clientY + "px";
+    tag.hidden = false;
+  } else tag.hidden = true;
+});
+canvas.addEventListener("pointerleave", () => { setHover(null); tag.hidden = true; });
+canvas.addEventListener("pointerdown", (ev) => { downAt = [ev.clientX, ev.clientY]; });
+canvas.addEventListener("pointerup", (ev) => {
+  if (!downAt || Math.hypot(ev.clientX - downAt[0], ev.clientY - downAt[1]) > 6) return; // a drag, not a click
+  const name = pick(ev);
+  if (name) openObject(name);
+  else if (focused) closeSheet();
+});
+
+// ---------------------------------------------------------------- camera focus
+function focusOn(name) {
+  const box = new THREE.Box3().setFromObject(groups[name]);
+  const c = box.getCenter(new THREE.Vector3());
+  const offset = camera.position.clone().sub(controls.target);
+  const zoom = name === "bookshelf" ? 1.35 : name === "desk_papers" || name === "angle_bench" ? 1.7 : 2.1;
+  // keep the object clear of the sheet: on wide screens shift the view so it sits left of centre
+  const wide = innerWidth > 640;
+  const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+  const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+  const vw = (camera.right - camera.left) / zoom, vh = (camera.top - camera.bottom) / zoom;
+  const target = c.clone()
+    .add(right.multiplyScalar(wide ? vw * 0.2 : 0))
+    .add(up.multiplyScalar(wide ? 0 : -vh * 0.22));
+  const pos = target.clone().add(offset);
+  gsap.to(controls.target, { x: target.x, y: target.y, z: target.z, duration: T(1.1), ease: "power2.inOut" });
+  gsap.to(camera.position, { x: pos.x, y: pos.y, z: pos.z, duration: T(1.1), ease: "power2.inOut" });
+  gsap.to(camera, { zoom, duration: T(1.1), ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+}
+
+function goHome() {
+  const offset = HOME_POS.clone().sub(HOME_TARGET);
+  const pos = HOME_TARGET.clone().add(offset);
+  gsap.to(controls.target, { x: HOME_TARGET.x, y: HOME_TARGET.y, z: HOME_TARGET.z, duration: T(1.0), ease: "power2.inOut" });
+  gsap.to(camera.position, { x: pos.x, y: pos.y, z: pos.z, duration: T(1.0), ease: "power2.inOut" });
+  gsap.to(camera, { zoom: 1, duration: T(1.0), ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+}
+
+// ---------------------------------------------------------------- sheets
+const sheet = document.getElementById("sheet");
+const inner = document.getElementById("sheet-inner");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function quoteHTML(q) {
+  const where = q.where ? `${esc(q.where)}, ` : "";
+  const text = /[.?!”)]$/.test(q.text) ? q.text : q.text + " …";
+  return `<figure class="quote"><p>${esc(text)}</p><figcaption class="cite">${where}${q.page}쪽</figcaption></figure>`;
+}
+const sourceHTML = `<p class="source">인용: ${SOURCE}. 저자 이메일 <span>${EMAIL}</span>. 이 서재의 모든 구절은 책 원문 그대로이며, 세이노의 말을 지어내지 않았습니다.</p>`;
+
+function sheetHTML(name) {
+  const o = DATA.objects[name];
+  const head = `<div class="sheet-head"><h2 id="sheet-title">${esc(o.label)}</h2><button type="button" class="close" id="close">닫기</button></div>`;
+  if (o.kind === "letter") return head + letterHTML(o);
+  if (o.kind === "daily") return head + dailyHTML() + sourceHTML;
+  if (o.kind === "books") {
+    return head + `<ul class="books">${o.books.map((b) => `<li><span class="bt">${esc(b.title)}</span><span class="ba">${esc(b.author)}</span><span class="bn">${esc(b.note)}</span></li>`).join("")}</ul>
+      <p class="note">부록 2 「세이노 추천도서」 ${o.page}쪽부터. 책장 전체 목록은 다음 단계에서 꽂아 둡니다.</p>` + sourceHTML;
+  }
+  if (o.kind === "drawer") {
+    return head + o.quotes.map(quoteHTML).join("") +
+      `<p class="note">아직 받은 답장이 없습니다. 편지를 보내면 답장이 이 서랍에 쌓입니다.</p>` + sourceHTML;
+  }
+  if (o.kind === "book") {
+    return head + `<p class="note">책상 위 편지지에 고민을 적으면, 답장이 이 책에 펼쳐집니다. 답장은 책의 원문과 쪽수로만 이루어집니다.</p>
+      <button type="button" class="seal" id="to-letter">편지 쓰러 가기</button>`;
+  }
+  return head + o.quotes.map(quoteHTML).join("") + sourceHTML;
+}
+
+function letterHTML(o) {
+  const draft = store.get("draft") || "";
+  return `<p class="note">먼저 이것부터 답하라. 서재 주인은 막연한 질문에 이렇게 답한 적이 있습니다.</p>
+    ${o.quotes.map(quoteHTML).join("")}
+    <label class="note" for="letter-text">그러니 당신의 처지와 고민을 구체적으로 적어 주세요.</label>
+    <div class="letter-paper"><textarea id="letter-text" placeholder="예) 3년째 같은 회사에 다니는데 연봉이 그대로입니다. 옮겨야 할까요?">${esc(draft)}</textarea></div>
+    <button type="button" class="seal" id="seal" ${draft.trim() ? "" : "disabled"}>봉투에 넣기</button>
+    <p class="sent" id="sent" hidden>편지를 봉투에 넣어 두었습니다. 편지에 맞는 질문지와 책에서 오는 답장은 다음 단계에서 이어집니다.</p>
+    ${sourceHTML}`;
+}
+
+function dailyHTML() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const day = Math.floor((now - start) / 86400000);
+  const q = DATA.daily[day % DATA.daily.length];
+  return `<div class="daily-date"><span class="d">${now.getDate()}</span><span class="m">${now.getMonth() + 1}월 · 오늘의 한 구절</span></div>
+    ${quoteHTML(q)}<p class="note">일력은 날마다 한 장씩 넘어갑니다.</p>`;
+}
+
+function openObject(name) {
+  setHover(null);
+  tag.hidden = true;
+  hideShelf();
+  const o = DATA.objects[name];
+  if (o.kind === "lamp") { toggleDeskLamp(); return; }
+  focused = name;
+  focusOn(name);
+  inner.innerHTML = sheetHTML(name);
+  inner.scrollTop = 0;
+  sheet.classList.add("open");
+  document.body.classList.add("reading");
+  sheet.setAttribute("aria-hidden", "false");
+  sheet.setAttribute("aria-labelledby", "sheet-title");
+  document.getElementById("close").onclick = closeSheet;
+  document.getElementById("close").focus({ preventScroll: true });
+  wireSheet(name);
+}
+
+function wireSheet(name) {
+  if (name === "open_book") document.getElementById("to-letter").onclick = () => openObject("letter");
+  if (name !== "letter") return;
+  const ta = document.getElementById("letter-text"), seal = document.getElementById("seal");
+  ta.addEventListener("input", () => { store.set("draft", ta.value); seal.disabled = !ta.value.trim(); });
+  seal.onclick = () => {
+    store.set("draft", ta.value);
+    document.getElementById("sent").hidden = false;
+    seal.disabled = true;
+  };
+}
+
+function closeSheet() {
+  focused = null;
+  setHover(null);
+  tag.hidden = true;
+  sheet.classList.remove("open");
+  document.body.classList.remove("reading");
+  sheet.setAttribute("aria-hidden", "true");
+  goHome();
+}
+addEventListener("keydown", (e) => { if (e.key === "Escape") { if (focused) closeSheet(); hideShelf(); } });
+
+function toggleDeskLamp() {
+  lampState.desk = !lampState.desk;
+  applyLamps(MOODS[mood], T(0.35));
+}
+
+// ---------------------------------------------------------------- browse list (touch and keyboard)
+const browse = document.getElementById("browse"), shelf = document.getElementById("shelf");
+function buildShelfList() {
+  const order = ["letter", "calendar", "desk_papers", "checklist", "angle_bench", "magazines", "bookshelf", "caricature", "drawer", "open_book", "lamp"];
+  shelf.innerHTML = order.filter((n) => groups[n]).map((n) =>
+    `<li><button type="button" data-name="${n}">${esc(DATA.objects[n].label)}${n === "lamp" ? " 켜고 끄기" : ""}</button></li>`).join("");
+  shelf.querySelectorAll("button").forEach((b) => (b.onclick = () => openObject(b.dataset.name)));
+}
+function hideShelf() { shelf.hidden = true; browse.setAttribute("aria-expanded", "false"); }
+browse.onclick = () => {
+  const open = shelf.hidden;
+  shelf.hidden = !open;
+  browse.setAttribute("aria-expanded", String(open));
+  if (open) shelf.querySelector("button")?.focus();
+};
+
+document.querySelectorAll(".times button").forEach((b) => (b.onclick = () => { store.set("mood", b.dataset.mood); setMood(b.dataset.mood); }));
+
+// ---------------------------------------------------------------- loop
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime();
+  if (dust.visible) {
+    const p = dust.geometry.attributes.position;
+    for (let i = 0; i < DUST; i++) {
+      p.array[i * 3] = dustBase[i * 3] + Math.sin(t * 0.13 + i) * 0.12;
+      p.array[i * 3 + 1] = dustBase[i * 3 + 1] + Math.sin(t * 0.09 + i * 1.7) * 0.18;
+      p.array[i * 3 + 2] = dustBase[i * 3 + 2] + Math.cos(t * 0.11 + i * 0.6) * 0.12;
+    }
+    p.needsUpdate = true;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
