@@ -11,6 +11,7 @@
   --ink: #2A2420;
   --ink-soft: #6B5D4F;
   --rule: #B9C3D6;
+  --pen: #2443A6;
   --stamp: #A3362A;
   --serif: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
   --book: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
@@ -109,7 +110,7 @@ body.dark .times button[aria-pressed="true"] { border-color: #EDE4D3; }
 }
 .letter-paper textarea {
   width: 100%; min-height: 216px; box-sizing: border-box; resize: vertical; border: 0; outline: 0; background: transparent;
-  font-family: var(--hand); font-size: 1.6rem; line-height: 36px; color: #24324F; padding: 0;
+  font-family: var(--hand); font-size: 1.6rem; line-height: 36px; color: var(--pen); padding: 0;
 }
 .letter-paper textarea::placeholder { color: #9AA3B5; }
 .seal {
@@ -118,6 +119,75 @@ body.dark .times button[aria-pressed="true"] { border-color: #EDE4D3; }
 }
 .seal:disabled { opacity: 0.45; cursor: default; }
 .sent { margin: 0; padding: 12px 14px; border: 1px dashed var(--ink-soft); font-size: 0.92rem; line-height: 1.7; }
+
+/* letter flow: picking a worry, the questionnaire, the reply */
+.picked { margin: 0; padding: 4px 0 4px 14px; border-left: 2px solid var(--rule); font-family: var(--hand); font-size: 1.45rem; line-height: 1.35; color: var(--pen); word-break: keep-all; }
+.choices { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.choices button {
+  width: 100%; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  background: #FFFCF4; border: 1px solid var(--paper-edge); padding: 12px 14px; display: grid; gap: 2px;
+  box-shadow: 0 2px 0 rgba(42, 36, 32, 0.08);
+}
+.choices button:hover { border-color: var(--ink-soft); }
+.choices .t { font-weight: 700; }
+.choices .sub { font-size: 0.85rem; color: var(--ink-soft); }
+.textlink { align-self: flex-start; font: inherit; font-size: 0.9rem; color: var(--ink-soft); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+.textlink:hover { color: var(--ink); }
+
+.qs { list-style: none; margin: 0; padding: 0; }
+.qs li { display: grid; grid-template-columns: 1.8em 1fr; column-gap: 4px; padding: 14px 0; border-top: 1px solid var(--paper-edge); }
+.qs li:last-child { border-bottom: 1px solid var(--paper-edge); }
+.qs .num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.qs .body { min-width: 0; display: grid; gap: 4px; }
+.qs .qt { margin: 0; line-height: 1.6; word-break: keep-all; }
+.qs .hint { margin: 0; font-size: 0.84rem; color: var(--ink-soft); line-height: 1.5; }
+.qs li.off { opacity: 0.38; }
+.qs li.off .marks { pointer-events: none; }
+.marks { display: flex; gap: 26px; margin-top: 6px; }
+.mark { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.mark input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.mark span { position: relative; padding: 2px 10px; font-size: 0.95rem; }
+.mark svg { position: absolute; inset: -9px -10px; width: calc(100% + 20px); height: calc(100% + 18px); overflow: visible; pointer-events: none; opacity: 0; }
+.mark svg path { fill: none; stroke: var(--pen); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; }
+.mark input:checked + span { color: var(--pen); font-weight: 700; }
+.mark input:checked + span svg { opacity: 1; }
+.mark input:checked + span svg path { animation: draw 0.45s ease-out forwards; }
+.mark input:focus-visible + span { outline: 2px solid var(--pen); outline-offset: 3px; }
+.mark:hover span { color: var(--pen); }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.left { font-size: 0.85rem; color: var(--ink-soft); }
+
+.verdict-label { margin: 0; font-family: var(--hand); font-size: 1.9rem; line-height: 1; color: var(--pen); transform: rotate(-2deg); transform-origin: left; }
+.verdict { margin: -8px 0 0; font-family: var(--book); font-weight: 700; font-size: 1.45rem; line-height: 1.5; text-wrap: balance; word-break: keep-all; }
+.verdict-sub { margin: -10px 0 0; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.7; }
+.section-mark { margin: 8px 0 -6px; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.3em; color: var(--ink-soft); }
+.finding { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--paper-edge); }
+.finding .because { margin: 0; font-size: 0.8rem; color: var(--ink-soft); }
+.finding .because b { color: var(--ink); }
+.finding h3 { margin: 0; font-size: 1.02rem; line-height: 1.65; word-break: keep-all; }
+.mission { position: relative; display: grid; gap: 10px; padding: 16px 16px 14px; background: #FFFCF4; border: 1px solid var(--paper-edge); }
+.mission .task { margin: 0; font-weight: 700; line-height: 1.7; word-break: keep-all; padding-right: 64px; }
+.mission .quote { font-size: 0.95rem; line-height: 1.85; }
+.stamp-btn { justify-self: start; font: inherit; font-size: 0.88rem; cursor: pointer; color: var(--stamp); background: none; border: 1px solid var(--stamp); padding: 6px 14px; }
+.stamp {
+  position: absolute; top: 12px; right: 12px; width: 58px; height: 58px; display: grid; place-items: center;
+  border: 2.5px solid var(--stamp); border-radius: 50%; color: var(--stamp); font-weight: 700; font-size: 1.05rem;
+  transform: rotate(-14deg); opacity: 0.88; mix-blend-mode: multiply;
+}
+.stamp.new { animation: stampin 0.32s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes stampin { from { transform: rotate(-14deg) scale(1.8); opacity: 0; } }
+.read-on { list-style: none; margin: 0; padding: 0; }
+.read-on li { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--paper-edge); font-size: 0.95rem; }
+.read-on .lead { flex: 1; border-bottom: 1px dotted var(--ink-soft); transform: translateY(-5px); min-width: 20px; }
+.read-on .n { font-size: 0.82rem; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.replies { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.replies li { position: relative; display: grid; gap: 4px; padding: 14px 16px; background: #FFFCF4; border: 1px solid var(--paper-edge); }
+.replies .date { font-size: 0.78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.replies .t { font-weight: 700; padding-right: 60px; }
+.replies .v { font-family: var(--book); font-size: 0.95rem; padding-right: 60px; }
+.replies .stamp { width: 46px; height: 46px; font-size: 0.9rem; top: 10px; right: 10px; }
+.replies .actions { margin-top: 6px; gap: 14px; }
 
 .loading {
   position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--ground);
@@ -169,6 +239,7 @@ body.dark .times button[aria-pressed="true"] { border-color: #EDE4D3; }
 } }
 </script>
 <script id="passages" type="application/json">/*__PASSAGES__*/</script>
+<script id="worries" type="application/json">/*__WORRIES__*/</script>
 <script id="glb" type="text/plain">/*__GLB__*/</script>
 <script type="module">
 import * as THREE from "three";
@@ -176,6 +247,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const DATA = JSON.parse(document.getElementById("passages").textContent);
+const W = JSON.parse(document.getElementById("worries").textContent);
 const SOURCE = "세이노의 가르침 (데이원, 2023)";
 const EMAIL = "sayno@korea.com";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -479,7 +551,7 @@ function focusOn(name) {
   const vw = (camera.right - camera.left) / zoom, vh = (camera.top - camera.bottom) / zoom;
   const target = c.clone()
     .add(right.multiplyScalar(wide ? vw * 0.2 : 0))
-    .add(up.multiplyScalar(wide ? 0 : -vh * 0.22));
+    .add(up.multiplyScalar(wide ? 0 : -vh * 0.34));  // phones: the sheet covers the lower 72%
   const pos = target.clone().add(offset);
   gsap.to(controls.target, { x: target.x, y: target.y, z: target.z, duration: T(1.1), ease: "power2.inOut" });
   gsap.to(camera.position, { x: pos.x, y: pos.y, z: pos.z, duration: T(1.1), ease: "power2.inOut" });
@@ -498,63 +570,24 @@ function goHome() {
 const sheet = document.getElementById("sheet");
 const inner = document.getElementById("sheet-inner");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const CIRCLE = '<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M58 4 C30 2 4 9 5 21 C6 33 34 38 58 36 C82 34 97 26 95 16 C93 6 72 2 46 5"/></svg>';
+const TOPIC = Object.fromEntries(W.topics.map((t) => [t.id, t]));
 
-function quoteHTML(q) {
-  const where = q.where ? `${esc(q.where)}, ` : "";
+function quoteHTML(q, where) {
+  const w = where ?? (q.where ? q.where : "");
   const text = /[.?!”)]$/.test(q.text) ? q.text : q.text + " …";
-  return `<figure class="quote"><p>${esc(text)}</p><figcaption class="cite">${where}${q.page}쪽</figcaption></figure>`;
+  return `<figure class="quote"><p>${esc(text)}</p><figcaption class="cite">${w ? esc(w) + ", " : ""}${q.page}쪽</figcaption></figure>`;
 }
-const sourceHTML = `<p class="source">인용: ${SOURCE}. 저자 이메일 <span>${EMAIL}</span>. 이 서재의 모든 구절은 책 원문 그대로이며, 세이노의 말을 지어내지 않았습니다.</p>`;
+const chapterOf = (q) => `「${W.chapters[q.ch][0]}」`;
+const sourceHTML = `<p class="source">인용: ${SOURCE}. 저자 이메일 <span>${EMAIL}</span>. 따옴표 대신 책 지면처럼 실은 문장은 모두 원문 그대로이고, 굵은 글씨의 판단과 미션은 책을 읽고 우리 말로 정리한 것입니다. 세이노의 말을 지어내지 않았습니다.</p>`;
 
-function sheetHTML(name) {
-  const o = DATA.objects[name];
-  const head = `<div class="sheet-head"><h2 id="sheet-title">${esc(o.label)}</h2><button type="button" class="close" id="close">닫기</button></div>`;
-  if (o.kind === "letter") return head + letterHTML(o);
-  if (o.kind === "daily") return head + dailyHTML() + sourceHTML;
-  if (o.kind === "books") {
-    return head + `<ul class="books">${o.books.map((b) => `<li><span class="bt">${esc(b.title)}</span><span class="ba">${esc(b.author)}</span><span class="bn">${esc(b.note)}</span></li>`).join("")}</ul>
-      <p class="note">부록 2 「세이노 추천도서」 ${o.page}쪽부터. 책장 전체 목록은 다음 단계에서 꽂아 둡니다.</p>` + sourceHTML;
-  }
-  if (o.kind === "drawer") {
-    return head + o.quotes.map(quoteHTML).join("") +
-      `<p class="note">아직 받은 답장이 없습니다. 편지를 보내면 답장이 이 서랍에 쌓입니다.</p>` + sourceHTML;
-  }
-  if (o.kind === "book") {
-    return head + `<p class="note">책상 위 편지지에 고민을 적으면, 답장이 이 책에 펼쳐집니다. 답장은 책의 원문과 쪽수로만 이루어집니다.</p>
-      <button type="button" class="seal" id="to-letter">편지 쓰러 가기</button>`;
-  }
-  return head + o.quotes.map(quoteHTML).join("") + sourceHTML;
-}
-
-function letterHTML(o) {
-  const draft = store.get("draft") || "";
-  return `<p class="note">먼저 이것부터 답하라. 서재 주인은 막연한 질문에 이렇게 답한 적이 있습니다.</p>
-    ${o.quotes.map(quoteHTML).join("")}
-    <label class="note" for="letter-text">그러니 당신의 처지와 고민을 구체적으로 적어 주세요.</label>
-    <div class="letter-paper"><textarea id="letter-text" placeholder="예) 3년째 같은 회사에 다니는데 연봉이 그대로입니다. 옮겨야 할까요?">${esc(draft)}</textarea></div>
-    <button type="button" class="seal" id="seal" ${draft.trim() ? "" : "disabled"}>봉투에 넣기</button>
-    <p class="sent" id="sent" hidden>편지를 봉투에 넣어 두었습니다. 편지에 맞는 질문지와 책에서 오는 답장은 다음 단계에서 이어집니다.</p>
-    ${sourceHTML}`;
-}
-
-function dailyHTML() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const day = Math.floor((now - start) / 86400000);
-  const q = DATA.daily[day % DATA.daily.length];
-  return `<div class="daily-date"><span class="d">${now.getDate()}</span><span class="m">${now.getMonth() + 1}월 · 오늘의 한 구절</span></div>
-    ${quoteHTML(q)}<p class="note">일력은 날마다 한 장씩 넘어갑니다.</p>`;
-}
-
-function openObject(name) {
+function showSheet(focusName, title, body, wire) {
   setHover(null);
   tag.hidden = true;
   hideShelf();
-  const o = DATA.objects[name];
-  if (o.kind === "lamp") { toggleDeskLamp(); return; }
-  focused = name;
-  focusOn(name);
-  inner.innerHTML = sheetHTML(name);
+  focused = focusName;
+  focusOn(focusName);
+  inner.innerHTML = `<div class="sheet-head"><h2 id="sheet-title">${esc(title)}</h2><button type="button" class="close" id="close">닫기</button></div>` + body;
   inner.scrollTop = 0;
   sheet.classList.add("open");
   document.body.classList.add("reading");
@@ -562,19 +595,267 @@ function openObject(name) {
   sheet.setAttribute("aria-labelledby", "sheet-title");
   document.getElementById("close").onclick = closeSheet;
   document.getElementById("close").focus({ preventScroll: true });
-  wireSheet(name);
+  if (wire) wire();
 }
 
-function wireSheet(name) {
-  if (name === "open_book") document.getElementById("to-letter").onclick = () => openObject("letter");
-  if (name !== "letter") return;
-  const ta = document.getElementById("letter-text"), seal = document.getElementById("seal");
-  ta.addEventListener("input", () => { store.set("draft", ta.value); seal.disabled = !ta.value.trim(); });
-  seal.onclick = () => {
-    store.set("draft", ta.value);
-    document.getElementById("sent").hidden = false;
-    seal.disabled = true;
-  };
+function openObject(name) {
+  const o = DATA.objects[name];
+  if (o.kind === "lamp") { setHover(null); tag.hidden = true; hideShelf(); toggleDeskLamp(); return; }
+  if (o.kind === "letter") return letterSheet();
+  if (o.kind === "drawer") return drawerSheet();
+  if (o.kind === "book") return bookSheet();
+  if (o.kind === "daily") return showSheet(name, o.label, dailyHTML() + sourceHTML);
+  if (o.kind === "books") {
+    return showSheet(name, o.label, `<ul class="books">${o.books.map((b) => `<li><span class="bt">${esc(b.title)}</span><span class="ba">${esc(b.author)}</span><span class="bn">${esc(b.note)}</span></li>`).join("")}</ul>
+      <p class="note">부록 2 「세이노 추천도서」 ${o.page}쪽부터. 책장 전체 목록은 다음 단계에서 꽂아 둡니다.</p>` + sourceHTML);
+  }
+  showSheet(name, o.label, o.quotes.map((q) => quoteHTML(q)).join("") + sourceHTML);
+}
+
+function dailyHTML() {
+  const now = new Date();
+  const day = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const keys = Object.keys(W.quotes);
+  const q = W.quotes[keys[day % keys.length]];
+  return `<div class="daily-date"><span class="d">${now.getDate()}</span><span class="m">${now.getMonth() + 1}월 · 오늘의 한 구절</span></div>
+    ${quoteHTML(q, chapterOf(q))}<p class="note">일력은 날마다 한 장씩 넘어갑니다.</p>`;
+}
+
+// ---------------------------------------------------------------- 1. the letter
+let flow = { letter: "", topic: null, answers: [] };
+
+function letterSheet() {
+  const o = DATA.objects.letter;
+  const draft = store.get("draft") || "";
+  showSheet("letter", o.label, `<p class="note">먼저 이것부터 답하라. 서재 주인은 막연한 질문에 이렇게 답한 적이 있습니다.</p>
+    ${o.quotes.map((q) => quoteHTML(q)).join("")}
+    <label class="note" for="letter-text">그러니 당신의 처지와 고민을 구체적으로 적어 주세요.</label>
+    <div class="letter-paper"><textarea id="letter-text" placeholder="예) 3년째 같은 회사에 다니는데 연봉이 그대로입니다. 옮겨야 할까요?">${esc(draft)}</textarea></div>
+    <button type="button" class="seal" id="seal" ${draft.trim() ? "" : "disabled"}>봉투에 넣기</button>
+    ${sourceHTML}`, () => {
+    const ta = document.getElementById("letter-text"), seal = document.getElementById("seal");
+    ta.addEventListener("input", () => { store.set("draft", ta.value); seal.disabled = !ta.value.trim(); });
+    seal.onclick = () => { flow = { letter: ta.value.trim(), topic: null, answers: [] }; pickSheet(); };
+  });
+}
+
+// ---------------------------------------------------------------- 2. which worry is it?
+function rankTopics(text) {
+  return W.topics
+    .map((t) => ({ t, score: t.keywords.reduce((n, k) => n + (text.includes(k) ? 1 : 0), 0) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((x) => x.t);
+}
+
+function pickSheet(showAll) {
+  const ranked = rankTopics(flow.letter);
+  const list = showAll || !ranked.length ? W.topics : ranked;
+  const lead = ranked.length && !showAll
+    ? "편지를 읽어 보니 이런 고민에 가까워 보입니다. 하나를 골라 주세요."
+    : "편지만으로는 고민을 짐작하기 어렵습니다. 가장 가까운 것을 골라 주세요.";
+  const excerpt = flow.letter.length > 90 ? flow.letter.slice(0, 90) + "…" : flow.letter;
+  showSheet("letter", "어떤 고민인가요?", `<p class="picked">${esc(excerpt)}</p>
+    <p class="note">${lead}</p>
+    <ul class="choices">${list.map((t) => `<li><button type="button" data-id="${t.id}"><span class="t">${esc(t.title)}</span><span class="sub">${esc(t.sub)}</span></button></li>`).join("")}</ul>
+    ${list === W.topics ? "" : '<button type="button" class="textlink" id="all">다른 고민 보기</button>'}
+    <p class="note">지금 서재에는 일과 직장에 관한 고민 여섯 가지가 있습니다. 돈, 투자, 사람에 관한 고민은 차례로 늘어납니다.</p>
+    <button type="button" class="textlink" id="rewrite">편지 고쳐 쓰기</button>`, () => {
+    inner.querySelectorAll(".choices button").forEach((b) => (b.onclick = () => { flow.topic = b.dataset.id; flow.answers = []; formSheet(); }));
+    document.getElementById("all")?.addEventListener("click", () => pickSheet(true));
+    document.getElementById("rewrite").onclick = letterSheet;
+  });
+}
+
+// ---------------------------------------------------------------- 3. the questionnaire
+const isOff = (t, i, answers) => t.qs[i].needs != null && answers[t.qs[i].needs] !== "yes";
+
+function formSheet() {
+  const t = TOPIC[flow.topic];
+  const q662 = DATA.objects.letter.quotes[1];
+  showSheet("letter", t.title, `${quoteHTML(q662)}
+    <p class="note">해당하는 쪽에 동그라미를 치세요. 모두 표시하면 답장을 받을 수 있습니다.</p>
+    <ol class="qs">${t.qs.map((q, i) => `
+      <li data-i="${i}"><span class="num">${i + 1}.</span>
+        <div class="body"><p class="qt">${esc(q.t)}</p>${q.h ? `<p class="hint">${esc(q.h)}</p>` : ""}
+          <div class="marks" role="radiogroup" aria-label="${i + 1}번 물음">
+            ${["yes", "no"].map((v) => `<label class="mark"><input type="radio" id="q-${t.id}-${i}-${v}" name="q${i}" value="${v}" ${flow.answers[i] === v ? "checked" : ""}><span>${v === "yes" ? "예" : "아니오"}${CIRCLE}</span></label>`).join("")}
+          </div></div></li>`).join("")}
+    </ol>
+    <div class="actions"><button type="button" class="seal" id="reply" disabled>답장 받기</button><span class="left" id="left"></span></div>
+    <button type="button" class="textlink" id="back">다른 고민 고르기</button>`, () => {
+    inner.querySelectorAll(".qs input").forEach((inp) => (inp.onchange = () => { flow.answers[+inp.name.slice(1)] = inp.value; syncForm(); }));
+    document.getElementById("reply").onclick = sendReply;
+    document.getElementById("back").onclick = () => pickSheet();
+    syncForm();
+  });
+}
+
+function syncForm() {
+  const t = TOPIC[flow.topic];
+  let left = 0;
+  t.qs.forEach((q, i) => {
+    const li = inner.querySelector(`li[data-i="${i}"]`), off = isOff(t, i, flow.answers);
+    li.classList.toggle("off", off);
+    li.querySelectorAll("input").forEach((x) => { x.disabled = off; if (off) x.checked = false; });
+    if (off) flow.answers[i] = undefined; else if (!flow.answers[i]) left++;
+  });
+  document.getElementById("reply").disabled = left > 0;
+  document.getElementById("left").textContent = left ? `${left}개 남음` : "";
+}
+
+// ---------------------------------------------------------------- 4. the reply, from the book
+function verdictFor(t, hit) {
+  const score = hit.reduce((s, q) => s + q.w, 0), leave = hit.some((q) => q.w < 0);
+  if (!hit.length) return ["세이노 기준으로 큰 걸림돌은 없다.", "남은 일은 그 일에서 귀신이 되는 것뿐이다."];
+  if (t.id === "quit") {
+    const stay = hit.filter((q) => q.w > 0).reduce((s, q) => s + q.w, 0);
+    if (stay >= 2) return ["아직 그만둘 때가 아니다.", "지금 일부터 완전히 익히는 것이 먼저다. 떠날 이유가 있더라도 그다음이다."];
+    return ["떠날 이유가 있다.", "다만 그곳에서 일하는 법은 다 배우고 나와라."];
+  }
+  if (leave && score <= 0) return ["자리를 옮기는 것을 진지하게 생각할 때다.", "실력을 먼저 쌓고, 몸값을 알아주는 곳으로 가라."];
+  if (score >= 4) return [{ join: "그 회사는 말린다.", partner: "그 제안은 말린다.", love: "아직 전업할 때가 아니다." }[t.id] || "방향부터 다시 잡아라.", "아래 걸리는 대목들을 먼저 해결하라."];
+  if (score >= 2) return ["해도 되지만 짚고 넘어갈 것이 있다.", "아래 대목을 읽고 판단하라."];
+  return ["큰 걸림돌은 없다.", "아래 대목만 마음에 새겨 두면 된다."];
+}
+
+function reading(r) {
+  const t = TOPIC[r.topic];
+  const hit = t.qs.filter((q, i) => q.f && r.answers[i] === q.on);
+  const [verdict, sub] = verdictFor(t, hit);
+  const chapters = [...new Set(hit.flatMap((q) => q.q.map((k) => W.quotes[k].ch)))]
+    .sort((a, b) => +W.chapters[a][1] - +W.chapters[b][1]);
+  if (!chapters.length) chapters.push("W4", "W10");
+  // the mission follows the heaviest finding; with no findings, the worry's own default
+  const top = hit.filter((q) => q.w > 0).sort((a, b) => b.w - a.w)[0] || hit[0];
+  const missionKey = top ? W.quotes[top.q[0]].ch : t.defaultMission;
+  return { t, hit, verdict, sub, chapters, missionKey, mission: W.missions[missionKey] };
+}
+
+function loadReplies() { try { return JSON.parse(store.get("replies") || "[]"); } catch { return []; } }
+function saveReplies(list) { store.set("replies", JSON.stringify(list)); }
+
+function sendReply() {
+  const r = { id: Date.now().toString(36), at: new Date().toISOString(), letter: flow.letter, topic: flow.topic, answers: flow.answers.slice(), done: false };
+  saveReplies([r, ...loadReplies()]);
+  store.set("draft", "");
+  openBookMotion();
+  replySheet(r, true);
+}
+
+function stampHTML(r, fresh) { return r.done ? `<span class="stamp${fresh ? " new" : ""}" aria-label="했음">했다</span>` : ""; }
+
+function replySheet(r, fresh) {
+  const x = reading(r);
+  const m = x.mission;
+  const when = new Date(r.at);
+  const shown = new Set(x.hit.flatMap((q) => q.q.map((k) => W.quotes[k].text)));
+  const chapterTitle = `「${W.chapters[x.missionKey][0]}」`;
+  showSheet("open_book", "답장", `<p class="verdict-label">세이노라면,</p>
+    <p class="verdict">${esc(x.verdict)}</p>
+    <p class="verdict-sub">${esc(x.sub)}</p>
+    ${x.hit.map((q) => `<section class="finding">
+      <p class="because">${x.t.qs.indexOf(q) + 1}번 물음에 <b>${q.on === "yes" ? "예" : "아니오"}</b>라고 답했기 때문에</p>
+      <h3>${esc(q.f)}</h3>
+      ${q.q.map((k) => quoteHTML(W.quotes[k], chapterOf(W.quotes[k]))).join("")}
+    </section>`).join("")}
+    <p class="section-mark">이번 주 미션</p>
+    <div class="mission" id="mission">${stampHTML(r, false)}
+      <p class="task">${esc(m.task)}</p>
+      ${shown.has(m.quote) ? `<p class="cite">위 구절, ${esc(chapterTitle)} ${m.page}쪽</p>` : quoteHTML({ text: m.quote, page: m.page }, chapterTitle)}
+      <button type="button" class="stamp-btn" id="done">${r.done ? "도장 지우기" : "했다, 도장 찍기"}</button>
+    </div>
+    <p class="section-mark">책에서 이어 읽기</p>
+    <ul class="read-on">${x.chapters.map((c) => `<li><span>${esc(W.chapters[c][0])}</span><span class="lead" aria-hidden="true"></span><span class="n">${W.chapters[c][1]}쪽</span></li>`).join("")}</ul>
+    <p class="section-mark">내 편지</p>
+    <p class="picked">${esc(r.letter)}</p>
+    <p class="note">${when.getMonth() + 1}월 ${when.getDate()}일에 보낸 편지 · ${esc(x.t.title)}</p>
+    <div class="actions">
+      <button type="button" class="seal" id="to-drawer">${fresh ? "서랍에 넣기" : "서랍 열기"}</button>
+      <button type="button" class="textlink" id="new-letter">새 편지 쓰기</button>
+    </div>
+    ${sourceHTML}`, () => {
+    document.getElementById("done").onclick = () => { toggleDone(r.id); replyStampRefresh(r.id); };
+    document.getElementById("to-drawer").onclick = () => { drawerMotion(); drawerSheet(); };
+    document.getElementById("new-letter").onclick = letterSheet;
+  });
+}
+
+function toggleDone(id) {
+  const list = loadReplies();
+  const r = list.find((x) => x.id === id);
+  if (!r) return null;
+  r.done = !r.done;
+  saveReplies(list);
+  return r;
+}
+
+function replyStampRefresh(id) {
+  const r = loadReplies().find((x) => x.id === id);
+  const box = document.getElementById("mission");
+  if (!r || !box) return;
+  box.querySelector(".stamp")?.remove();
+  if (r.done) box.insertAdjacentHTML("afterbegin", stampHTML(r, !reduceMotion));
+  document.getElementById("done").textContent = r.done ? "도장 지우기" : "했다, 도장 찍기";
+}
+
+// ---------------------------------------------------------------- 5. the drawer
+function drawerSheet() {
+  const o = DATA.objects.drawer;
+  const list = loadReplies();
+  const body = list.length
+    ? `<p class="note">받은 답장 ${list.length}통. 미션을 했으면 도장을 찍어 두세요. 이 기록은 이 브라우저에만 남습니다.</p>
+      <ul class="replies">${list.map((r) => {
+        const x = reading(r), d = new Date(r.at);
+        return `<li data-id="${r.id}">${stampHTML(r, false)}
+          <span class="date">${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.</span>
+          <span class="t">${esc(x.t.title)}</span>
+          <span class="v">${esc(x.verdict)}</span>
+          <span class="note">미션: ${esc(x.mission.task)}</span>
+          <div class="actions"><button type="button" class="textlink" data-act="read">다시 읽기</button>
+          <button type="button" class="stamp-btn" data-act="done">${r.done ? "도장 지우기" : "했다"}</button></div></li>`;
+      }).join("")}</ul>`
+    : `<p class="note">아직 받은 답장이 없습니다. 책상 위 편지지에 고민을 적으면 답장이 이 서랍에 쌓입니다.</p>
+      <button type="button" class="seal" id="to-letter">편지 쓰러 가기</button>`;
+  showSheet("drawer", o.label, body + o.quotes.map((q) => quoteHTML(q)).join("") + sourceHTML, () => {
+    document.getElementById("to-letter")?.addEventListener("click", letterSheet);
+    inner.querySelectorAll(".replies li").forEach((li) => {
+      const id = li.dataset.id;
+      li.querySelector('[data-act="read"]').onclick = () => { openBookMotion(); replySheet(loadReplies().find((x) => x.id === id), false); };
+      li.querySelector('[data-act="done"]').onclick = (e) => {
+        const r = toggleDone(id);
+        li.querySelector(".stamp")?.remove();
+        if (r.done) li.insertAdjacentHTML("afterbegin", stampHTML(r, !reduceMotion));
+        e.currentTarget.textContent = r.done ? "도장 지우기" : "했다";
+      };
+    });
+  });
+}
+
+function bookSheet() {
+  const latest = loadReplies()[0];
+  if (latest) { openBookMotion(); return replySheet(latest, false); }
+  showSheet("open_book", DATA.objects.open_book.label, `<p class="note">책상 위 편지지에 고민을 적으면, 답장이 이 책에 펼쳐집니다. 답장은 책의 원문과 쪽수로만 이루어집니다.</p>
+    <button type="button" class="seal" id="to-letter">편지 쓰러 가기</button>`, () => {
+    document.getElementById("to-letter").onclick = letterSheet;
+  });
+}
+
+// small motions on the 3D objects
+function openBookMotion() {
+  const g = groups.open_book;
+  if (!g || reduceMotion) return;
+  const y = (g.userData.baseY ??= g.position.y);
+  gsap.timeline().to(g.position, { y: y + 0.1, duration: 0.4, ease: "power2.out" })
+    .to(g.position, { y, duration: 0.5, ease: "bounce.out" });
+}
+function drawerMotion() {
+  const g = groups.drawer;
+  if (!g || reduceMotion) return;
+  const z = (g.userData.baseZ ??= g.position.z);
+  gsap.timeline().to(g.position, { z: z + 0.08, duration: 0.25, ease: "power2.out" })
+    .to(g.position, { z, duration: 0.35, ease: "power2.in", delay: 0.35 });
 }
 
 function closeSheet() {

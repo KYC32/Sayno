@@ -5,6 +5,11 @@ answer a short questionnaire, and get a reply made only of passages from
 *세이노의 가르침* (데이원, 2023) with page numbers. There is no Sayno character and
 no invented Sayno dialogue.
 
+The flow: write a letter at the desk, pick the closest worry (matched from the letter's
+words, no AI), circle yes or no on a short questionnaire, and the open book shows the reply
+with this week's mission. Replies go into the drawer, kept only in the visitor's browser,
+where a mission can be stamped as done.
+
 Free and non-commercial. Source of all quoted text: 세이노의 가르침 (데이원, 2023),
 author email sayno@korea.com.
 
@@ -19,9 +24,12 @@ author email sayno@korea.com.
   clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...).
 - `web/study.html` is the page: three.js (r170) and GSAP from public CDNs, time-of-day
   lighting, click an object to read its passage.
-- `web/data/passages.json` holds every quoted passage with its page number.
-  `tools/check_passages.py <book.txt> web/data/passages.json` checks each one word for word
-  against the book text (the book itself is not in this repository).
+- `web/data/passages.json` holds the passage for each object in the room.
+- `web/data/worries.json` holds the six work worries (questions, findings, verdict rules),
+  the 40 quotes behind them with chapter and page, and one weekly mission per principle.
+- `tools/check_passages.py <book.txt> web/data/passages.json web/data/worries.json` checks
+  every quote word for word and its cited page against the book text (the book itself is not
+  in this repository).
 - `tools/build_web.py` inlines the model and passages into `dist/study.html` and `dist/index.html`.
 
 ## Running

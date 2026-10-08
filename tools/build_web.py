@@ -1,4 +1,4 @@
-"""Inline the study model and passages into one self-contained page.
+"""Inline the study model, passages and worries into one self-contained page.
 
     python3 tools/build_web.py
 
@@ -18,8 +18,11 @@ def main():
     page = (WEB / "study.html").read_text(encoding="utf-8")
     glb = base64.b64encode((WEB / "assets" / "study.glb").read_bytes()).decode("ascii")
     passages = json.loads((WEB / "data" / "passages.json").read_text(encoding="utf-8"))
-    data = json.dumps(passages, ensure_ascii=False).replace("</", "<\\/")
-    page = page.replace("/*__GLB__*/", glb).replace("/*__PASSAGES__*/", data)
+    worries = json.loads((WEB / "data" / "worries.json").read_text(encoding="utf-8"))
+    inline = lambda d: json.dumps(d, ensure_ascii=False).replace("</", "<\\/")
+    page = (page.replace("/*__GLB__*/", glb)
+                .replace("/*__PASSAGES__*/", inline(passages))
+                .replace("/*__WORRIES__*/", inline(worries)))
     DIST.mkdir(exist_ok=True)
     (DIST / "study.html").write_text(page, encoding="utf-8")
     full = ('<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
