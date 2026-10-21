@@ -16,14 +16,20 @@ author email sayno@korea.com.
 ## Layout
 
 - `blender/build_study.py` builds the study as a low-poly diorama with Blender's
-  Python API and renders mood previews (`dusk`, `night`, `morning`).
+  Python API (about 340 parts, every object one the book mentions) and renders mood
+  previews (`dusk`, `night`, `morning`). The same script also runs in a hosted Blender
+  (Higgsfield 3D Jutsu) with plain colours.
 - `blender/compose_moods.py` puts the transparent renders on paper-coloured
   backgrounds and makes a comparison sheet.
 - `blender/study.blend` is the generated scene; open it in Blender to edit by hand.
 - `blender/export_glb.py` exports the study to `web/assets/study.glb`, one named mesh per
-  clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...).
+  clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...). It bakes each
+  mesh's surface detail (wood grain, paper, weave) and ambient occlusion into one JPEG with
+  Cycles, skipping faces the page's camera can never see, then compresses the geometry with
+  glTF-Transform's meshopt (run through `npx`, so it needs Node).
 - `web/study.html` is the page: three.js (r170) and GSAP from public CDNs, time-of-day
-  lighting, click an object to read its passage.
+  lighting over the baked textures, a wall clock on the visitor's time, click an object to
+  read its passage.
 - `web/data/passages.json` holds the passage for each object in the room.
 - `web/data/worries.json` holds the six work worries (questions, findings, verdict rules),
   the 40 quotes behind them with chapter and page, and one weekly mission per principle.
@@ -39,6 +45,6 @@ python3 -m pip install bpy pillow
 python3 blender/build_study.py --save blender/study.blend
 python3 blender/build_study.py --mood dusk --out renders/hi_dusk.png --samples 96 --res 1600x1200
 python3 blender/compose_moods.py renders renders/moods
-python3 blender/export_glb.py web/assets/study.glb
+python3 blender/export_glb.py web/assets/study.glb   # about 10 minutes; --quick to try things
 python3 tools/build_web.py   # then open dist/index.html
 ```

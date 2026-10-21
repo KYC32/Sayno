@@ -244,6 +244,7 @@ body.dark .times button[aria-pressed="true"] { border-color: #EDE4D3; }
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const DATA = JSON.parse(document.getElementById("passages").textContent);
@@ -330,8 +331,12 @@ const deskGlow = new THREE.PointLight(0xffaa66, 1.6, 5, 2);
 deskGlow.position.set(-0.15, 1.3, -2.43);
 scene.add(deskGlow);
 const floorLamp = new THREE.PointLight(0xffb56e, 4, 7, 2);
-floorLamp.position.set(2.0, 1.45, 0.4);
+floorLamp.position.set(2.0, 1.52, 0.4);
 scene.add(floorLamp);
+// the floor lamp's light coming back off the rug, so the armchair's front is not lost at night
+const bounce = new THREE.PointLight(0xffa46c, 0, 3.2, 2);
+bounce.position.set(1.1, 0.5, 2.2);
+scene.add(bounce);
 
 // sky seen through the window
 const sky = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -341,11 +346,11 @@ scene.add(sky);
 
 const MOODS = {
   morning: { ground: "#E8ECE8", sky: "#CFE3F4", hemiSky: "#F4F6F6", hemiGround: "#C2A78C", hemi: 1.8, exposure: 1.15,
-             sun: "#FFF3E0", sunI: 4.2, elev: 36, fill: 0.8, fillC: "#F2F5FF", lamps: 0, dark: false, dust: 0.4 },
+             sun: "#FFF3E0", sunI: 4.2, elev: 36, fill: 0.8, fillC: "#F2F5FF", lamps: 0, bounce: 0, dark: false, dust: 0.4 },
   dusk:    { ground: "#EEE0CD", sky: "#F39A5E", hemiSky: "#F6E1C8", hemiGround: "#7F5A40", hemi: 1.25, exposure: 1.15,
-             sun: "#FFA866", sunI: 4.0, elev: 21, fill: 0.4, fillC: "#FFE3C4", lamps: 1, dark: false, dust: 0.7 },
+             sun: "#FFA866", sunI: 4.0, elev: 21, fill: 0.4, fillC: "#FFE3C4", lamps: 1, bounce: 0, dark: false, dust: 0.7 },
   night:   { ground: "#262A3A", sky: "#1C2846", hemiSky: "#4A5680", hemiGround: "#1E1914", hemi: 0.28, exposure: 1.0,
-             sun: "#9DB2FF", sunI: 0.3, elev: 42, fill: 0.06, fillC: "#7F93CC", lamps: 1.3, dark: true, dust: 0.5 },
+             sun: "#9DB2FF", sunI: 0.3, elev: 42, fill: 0.06, fillC: "#7F93CC", lamps: 1.3, bounce: 1, dark: true, dust: 0.5 },
 };
 const lampState = { desk: true };
 let mood = null;
@@ -364,6 +369,7 @@ function applyLamps(m, dur) {
   gsap.to(deskLamp, { intensity: deskOn ? 7 * k : 0, duration: dur });
   gsap.to(deskGlow, { intensity: deskOn ? 1.8 * k : 0, duration: dur });
   gsap.to(floorLamp, { intensity: k > 0 ? 3.5 * k : 0, duration: dur });
+  gsap.to(bounce, { intensity: m.bounce, duration: dur });
   const glow = (mat, on, s) => mat && gsap.to(mat, { emissiveIntensity: on ? s : 0, duration: dur });
   glow(lampMats.deskBulb, deskOn, 6);
   glow(lampMats.deskShade, deskOn, 0.25);
@@ -429,15 +435,23 @@ function decodeGlb() {
   return bytes.buffer;
 }
 
-new GLTFLoader().parse(decodeGlb(), "", (gltf) => {
+const clockHands = {};
+const dateCard = { mesh: null, canvas: document.createElement("canvas"), day: null };
+
+new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(decodeGlb(), "", (gltf) => {
   const root = gltf.scene;
+  const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   root.traverse((o) => {
     if (!o.isMesh) return;
     o.castShadow = true;
     o.receiveShadow = true;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    mats.forEach((mt) => { mt.flatShading = true; });
+    // baked colour and shade from Blender; keep it crisp on the floor seen at a slant
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach((mt) => { if (mt.map) mt.map.anisotropy = aniso; });
   });
+  clockHands.hour = root.getObjectByName("clock_hour");
+  clockHands.minute = root.getObjectByName("clock_minute");
+  setupDateCard(root.getObjectByName("calendar_date"), aniso);
+  setClock();
   for (const name of INTERACTIVE) {
     const obj = root.getObjectByName(name);
     if (!obj) continue;
@@ -851,7 +865,7 @@ function openBookMotion() {
     .to(g.position, { y, duration: 0.5, ease: "bounce.out" });
 }
 function drawerMotion() {
-  const g = groups.drawer;
+  const g = groups.drawer?.getObjectByName("drawer_slide");
   if (!g || reduceMotion) return;
   const z = (g.userData.baseZ ??= g.position.z);
   gsap.timeline().to(g.position, { z: z + 0.08, duration: 0.25, ease: "power2.out" })
@@ -891,6 +905,53 @@ browse.onclick = () => {
 };
 
 document.querySelectorAll(".times button").forEach((b) => (b.onclick = () => { store.set("mood", b.dataset.mood); setMood(b.dataset.mood); }));
+
+// the wall clock keeps the visitor's time; its hands turn clockwise about the wall's normal (+x)
+function setClock() {
+  const d = new Date();
+  const min = d.getMinutes() + d.getSeconds() / 60, hour = (d.getHours() % 12) + min / 60;
+  if (clockHands.hour) clockHands.hour.rotation.x = -(hour / 12) * Math.PI * 2;
+  if (clockHands.minute) clockHands.minute.rotation.x = -(min / 60) * Math.PI * 2;
+  if (dateCard.mesh && d.getDate() !== dateCard.day) drawDate(d);
+}
+
+// the desk calendar shows today: a blank card from Blender sits where its date is printed
+function setupDateCard(mesh, aniso) {
+  if (!mesh) return;
+  mesh.geometry.computeBoundingBox();
+  const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+  dateCard.canvas.height = 256;
+  dateCard.canvas.width = Math.round(256 * size.x / size.y);
+  const tex = new THREE.CanvasTexture(dateCard.canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false;   // glTF texture coordinates start at the top
+  tex.anisotropy = aniso;
+  mesh.material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.9,
+    polygonOffset: true, polygonOffsetFactor: -1 });
+  mesh.castShadow = false;
+  dateCard.mesh = mesh;
+  // redraw once the serif face has loaded; the first drawing may use a fallback
+  document.fonts?.load('700 200px "Gowun Batang"', "0123456789").then(() => drawDate(new Date())).catch(() => {});
+}
+
+function drawDate(d) {
+  const c = dateCard.canvas, g = c.getContext("2d"), day = d.getDay();
+  g.clearRect(0, 0, c.width, c.height);
+  g.fillStyle = day === 0 ? "#B23A2E" : day === 6 ? "#2F4C86" : "#26211C";   // Sunday red, Saturday blue
+  g.font = '700 236px "Gowun Batang", "Nanum Myeongjo", serif';
+  g.textAlign = "center";
+  g.textBaseline = "alphabetic";
+  const m = g.measureText(String(d.getDate()));
+  const h = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+  g.save();
+  g.translate(c.width / 2, (c.height + h) / 2 - m.actualBoundingBoxDescent);
+  g.scale(Math.min(1, (c.width * 0.94) / m.width), 1);
+  g.fillText(String(d.getDate()), 0, 0);
+  g.restore();
+  dateCard.day = d.getDate();
+  dateCard.mesh.material.map.needsUpdate = true;
+}
+setInterval(setClock, 10000);
 
 // ---------------------------------------------------------------- loop
 const clock = new THREE.Clock();
