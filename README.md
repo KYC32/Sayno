@@ -2,8 +2,8 @@
 
 A small, peaceful 3D study you visit in the browser. You write a letter about a worry,
 answer a short questionnaire, and get a reply made only of passages from
-*세이노의 가르침* (데이원, 2023) with page numbers. There is no Sayno character and
-no invented Sayno dialogue.
+*세이노의 가르침* (데이원, 2023) with page numbers. There is no invented Sayno dialogue: the Sayno figure (at the concept
+stage, see `blender/characters.py`) will only ever show passages from the book.
 
 The flow: write a letter at the desk, pick the closest worry (matched from the letter's
 words, no AI), circle yes or no on a short questionnaire, and the open book shows the reply
@@ -22,6 +22,11 @@ author email sayno@korea.com.
 - `blender/compose_moods.py` puts the transparent renders on paper-coloured
   backgrounds and makes a comparison sheet.
 - `blender/study.blend` is the generated scene; open it in Blender to edit by hand.
+- `blender/characters.py` builds two figurines, Sayno and the visitor, as rigid parts on a
+  tree of 17 joints (empties), so a pose is a few joint rotations (with a small two-bone
+  reach for the hands) and the same joints can carry glTF animations later. It renders a
+  character sheet, a face comparison and both figures standing in the study.
+  `blender/characters.blend` is the generated scene.
 - `blender/export_glb.py` exports the study to `web/assets/study.glb`, one named mesh per
   clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...). It bakes each
   mesh's surface detail (wood grain, paper, weave) and ambient occlusion into one JPEG with
@@ -45,6 +50,8 @@ python3 -m pip install bpy pillow
 python3 blender/build_study.py --save blender/study.blend
 python3 blender/build_study.py --mood dusk --out renders/hi_dusk.png --samples 96 --res 1600x1200
 python3 blender/compose_moods.py renders renders/moods
+python3 blender/characters.py --sheet renders/chars/sheet.png --study renders/chars/study.png --close
+python3 blender/characters.py --save blender/characters.blend
 python3 blender/export_glb.py web/assets/study.glb   # about 10 minutes; --quick to try things
 python3 tools/build_web.py   # then open dist/index.html
 ```
