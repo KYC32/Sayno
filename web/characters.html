@@ -1,0 +1,677 @@
+<title>세이노의 서재 · 인물 동작</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
+<style>
+/* One paper look, like the study page: the two figures on a round wooden floor, a note card of
+   actions laid over the bottom of the screen. */
+:root {
+  --ground: #EEE2D2;
+  --paper: #F7F1E3;
+  --paper-edge: #E4D8BF;
+  --paper-hover: #EFE5D0;
+  --ink: #2A2420;
+  --ink-soft: #6B5D4F;
+  --stamp: #A3362A;
+  --serif: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--ground); color: var(--ink); font-family: var(--serif); }
+#scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+.masthead {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 2; pointer-events: none;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+}
+.masthead > * { pointer-events: auto; }
+.name { margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.02em; }
+.name small { display: block; margin-top: 4px; font-size: 0.82rem; font-weight: 400; color: var(--ink-soft); letter-spacing: 0; }
+.slow {
+  flex: none; font: inherit; font-size: 0.88rem; color: var(--ink); background: none; cursor: pointer;
+  border: 0; border-bottom: 1.5px solid transparent; padding: 4px 6px;
+}
+.slow[aria-pressed="true"] { border-bottom-color: var(--ink); }
+
+.panel {
+  position: fixed; z-index: 2; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: min(560px, calc(100% - 32px)); box-sizing: border-box;
+  background: var(--paper); border: 1px solid var(--paper-edge); box-shadow: 0 6px 18px rgba(42, 36, 32, 0.16);
+  padding: 12px 16px 12px;
+}
+.who { display: flex; align-items: flex-end; gap: 18px; border-bottom: 1px solid var(--paper-edge); margin-bottom: 10px; }
+.who button {
+  font: inherit; font-size: 1rem; font-weight: 700; color: var(--ink-soft); background: none; cursor: pointer;
+  border: 0; border-bottom: 2px solid transparent; padding: 2px 2px 7px; margin-bottom: -1px;
+}
+.who button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--stamp); }
+.who .role { margin-left: auto; padding-bottom: 8px; font-size: 0.8rem; color: var(--ink-soft); }
+.acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+@media (min-width: 560px) { .acts { grid-template-columns: repeat(6, 1fr); } }
+.acts button {
+  font: inherit; font-size: 0.92rem; color: var(--ink); background: transparent; cursor: pointer;
+  border: 1px solid var(--paper-edge); padding: 8px 4px; white-space: nowrap;
+}
+.acts button:hover { background: var(--paper-hover); }
+.acts button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+.acts button[hidden] { display: none; }
+.who button:focus-visible, .acts button:focus-visible, .slow:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+.hint { margin: 9px 0 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; }
+/* a phone on its side: the card moves to the right edge so the figures keep the height */
+@media (orientation: landscape) and (max-height: 520px) {
+  .panel {
+    left: auto; right: max(16px, env(safe-area-inset-right, 0px)); transform: none;
+    top: calc(env(safe-area-inset-top, 0px) + 66px); bottom: auto; width: 268px;
+    max-height: calc(100% - 82px); overflow-y: auto;
+  }
+  .acts { grid-template-columns: repeat(2, 1fr); }
+  .hint { display: none; }
+}
+
+.tag {
+  position: fixed; z-index: 1; pointer-events: none; padding: 3px 9px 4px; white-space: nowrap;
+  background: var(--paper); border: 1px solid var(--paper-edge); font-size: 0.8rem; color: var(--ink-soft);
+  box-shadow: 0 2px 0 rgba(42, 36, 32, 0.12); transform: translate(-50%, -100%);
+}
+.tag.on { color: var(--ink); border-color: var(--ink-soft); }
+
+.loading {
+  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--ground);
+  font-size: 1rem; color: var(--ink-soft); transition: opacity 0.8s ease;
+}
+.loading.gone { opacity: 0; pointer-events: none; }
+.nogl { max-width: 30em; padding-inline: 20px; line-height: 1.8; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .loading { transition: none; } }
+</style>
+
+<canvas id="scene" aria-label="둥근 나무 바닥 위에 세이노와 방문자가 서 있는 3D 화면"></canvas>
+
+<header class="masthead" id="masthead">
+  <h1 class="name">세이노의 서재<small>인물 동작 시안 · 2단계</small></h1>
+  <button type="button" class="slow" id="slow" aria-pressed="false">천천히 보기</button>
+</header>
+
+<div class="tag" id="tag-sayno" hidden>세이노</div>
+<div class="tag" id="tag-visitor" hidden>방문자</div>
+
+<section class="panel" id="panel" aria-label="동작 고르기">
+  <div class="who" role="tablist" aria-label="인물">
+    <button type="button" role="tab" data-who="sayno" aria-selected="true">세이노</button>
+    <button type="button" role="tab" data-who="visitor" aria-selected="false">방문자</button>
+    <span class="role" id="role">서재 주인</span>
+  </div>
+  <div class="acts" role="group" aria-label="동작">
+    <button type="button" data-act="stand">서 있기</button>
+    <button type="button" data-act="walk">걷기</button>
+    <button type="button" data-act="look">돌아보기</button>
+    <button type="button" data-act="nod">끄덕이기</button>
+    <button type="button" data-act="sit">앉기</button>
+    <button type="button" data-act="write" data-only="sayno">수첩에 쓰기</button>
+    <button type="button" data-act="offer" data-only="visitor" hidden>편지 건네기</button>
+  </div>
+  <p class="hint" id="hint">끌어서 돌려 보고, 휠로 가까이 볼 수 있습니다. 인물을 눌러도 고를 수 있습니다.</p>
+</section>
+
+<div class="loading" id="loading"><span id="loading-text">인물을 불러오는 중입니다</span></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script id="glb" type="text/plain">/*__GLB__*/</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const $ = (id) => document.getElementById(id);
+const touch = matchMedia("(pointer: coarse)").matches;
+if (touch) $("hint").textContent = "끌어서 돌려 보고, 두 손가락으로 가까이 볼 수 있습니다. 인물을 눌러도 고를 수 있습니다.";
+
+// ---------------------------------------------------------------- renderer, camera, lights
+const canvas = $("scene");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+} catch (e) {
+  $("loading").innerHTML = '<p class="nogl">이 기기에서는 3D 화면을 띄울 수 없습니다. 다른 브라우저나 기기에서 열어 주세요.</p>';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.25;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 80);
+const TARGET = new THREE.Vector3(0, 0.72, 0);
+const VIEW_DIR = new THREE.Vector3(0, 0.44, 1).normalize();
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.rotateSpeed = 0.6;
+controls.minPolarAngle = 0.55;
+controls.maxPolarAngle = 1.48;
+
+scene.add(new THREE.HemisphereLight(0xfff3e2, 0x6a4c34, 0.85));
+const sun = new THREE.DirectionalLight(0xfff0dc, 2.0);
+sun.position.set(-2.4, 4.8, 3.4);
+sun.castShadow = true;
+const small = Math.min(innerWidth, innerHeight) < 600;
+sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -2.1, right: 2.1, top: 2.1, bottom: -2.1, near: 1, far: 12 });
+sun.shadow.bias = -0.0005;
+sun.shadow.normalBias = 0.02;
+const fill = new THREE.DirectionalLight(0xdfe7ff, 0.45);
+fill.position.set(3.2, 2.2, 2.4);
+scene.add(sun, fill);
+
+// ---------------------------------------------------------------- the floor: the study's boards, round
+function rng(seed) {
+  return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function boards() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 1024;
+  const g = c.getContext("2d");
+  const rand = rng(7);
+  const tones = [[0.36, 0.22, 0.12], [0.32, 0.19, 0.10], [0.40, 0.25, 0.14]].map((v) => new THREE.Color().setRGB(...v));
+  g.fillStyle = new THREE.Color().setRGB(0.12, 0.075, 0.045).getStyle();
+  g.fillRect(0, 0, 1024, 1024);
+  const n = 22, w = 1024 / n;
+  for (let i = 0; i < n; i++) {
+    let y = -rand() * 400;
+    while (y < 1024) {
+      const len = 280 + rand() * 300;
+      g.fillStyle = tones[Math.floor(rand() * 3)].clone().multiplyScalar(0.9 + rand() * 0.18).getStyle();
+      g.fillRect(i * w + 1, y + 1.5, w - 2, len - 3);
+      g.strokeStyle = "rgba(40, 24, 14, 0.09)";
+      g.lineWidth = 1.2;
+      for (let k = 0; k < 5; k++) {
+        const x = i * w + 4 + rand() * (w - 8);
+        g.beginPath();
+        g.moveTo(x, y);
+        g.bezierCurveTo(x + rand() * 8 - 4, y + len / 3, x + rand() * 8 - 4, y + (2 * len) / 3, x + rand() * 4 - 2, y + len);
+        g.stroke();
+      }
+      y += len;
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  return t;
+}
+const R = 1.72;
+const floor = new THREE.Mesh(
+  new THREE.CylinderGeometry(R, R + 0.02, 0.08, 128),
+  [new THREE.MeshStandardMaterial({ color: new THREE.Color().setRGB(0.17, 0.11, 0.07), roughness: 0.85 }),
+   new THREE.MeshStandardMaterial({ map: boards(), roughness: 0.78 }),
+   new THREE.MeshStandardMaterial({ color: 0x000000 })]);
+floor.position.y = -0.04;
+floor.receiveShadow = true;
+scene.add(floor);
+{ // a soft shadow under the floor, so it sits on the page
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(128, 128, 60, 128, 128, 128);
+  grad.addColorStop(0, "rgba(60, 40, 25, 0.35)");
+  grad.addColorStop(1, "rgba(60, 40, 25, 0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  const shade = new THREE.Mesh(new THREE.PlaneGeometry(R * 2.5, R * 2.5),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  shade.rotation.x = -Math.PI / 2;
+  shade.position.y = -0.081;
+  scene.add(shade);
+}
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.21, 0.24, 64),
+  new THREE.MeshBasicMaterial({ color: new THREE.Color("#A3362A"), transparent: true, opacity: 0.55, depthWrite: false }));
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = 0.003;
+ring.visible = false;
+scene.add(ring);
+
+// ---------------------------------------------------------------- the figures
+const HOME = { sayno: new THREE.Vector3(-0.75, 0, 0.32), visitor: new THREE.Vector3(0.75, 0, 0.32) };
+const ROLE = { sayno: "서재 주인", visitor: "편지를 들고 온 사람" };
+const OVERLAYS = ["look", "nod"];
+const TURN_RATE = 4.5;          // radians a second
+
+function angleTo(a, b) {        // signed shortest turn from a to b
+  return Math.atan2(Math.sin(b - a), Math.cos(b - a));
+}
+
+function loopPath(centre, rx, rz, side) {
+  // round the chair, starting and ending at the front (home), setting off to the figure's outside
+  const N = 240, pts = [], len = [0];
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    pts.push(new THREE.Vector3(centre.x + side * rx * Math.sin(a), 0, centre.z + rz * Math.cos(a)));
+  }
+  for (let i = 1; i <= N; i++) len.push(len[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  const total = len[N];
+  return {
+    total,
+    at(s, pos, tan) {
+      s = ((s % total) + total) % total;
+      let lo = 0, hi = N;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (len[mid] <= s) lo = mid; else hi = mid; }
+      const k = (s - len[lo]) / (len[hi] - len[lo]);
+      pos.lerpVectors(pts[lo], pts[hi], k);
+      tan.subVectors(pts[hi], pts[lo]).normalize();
+    },
+  };
+}
+
+class Figure {
+  constructor(who, root, clips, chair) {
+    this.who = who;
+    this.root = root;
+    this.home = HOME[who];
+    root.position.copy(this.home);
+    this.heading = 0;
+    this.mixer = new THREE.AnimationMixer(root);
+    this.speed = root.userData.walk_speed || 0.6;
+    this.actions = {};
+    this.adds = {};
+    for (const clip of clips) {
+      const name = clip.name.slice(who.length + 1);
+      if (OVERLAYS.includes(name)) {
+        clip.tracks = clip.tracks.filter((t) => t.name.endsWith(".quaternion"));
+        THREE.AnimationUtils.makeClipAdditive(clip);
+        this.adds[name] = this.mixer.clipAction(clip);
+      } else {
+        this.actions[name] = this.mixer.clipAction(clip);
+      }
+    }
+    // the chair stands behind home, the way the clips sit down onto it
+    const off = root.userData.chair_offset || [0, 0, -0.36];
+    chair.position.set(this.home.x + off[0], 0, this.home.z + off[2]);
+    this.chair = chair;
+    const side = who === "sayno" ? -1 : 1;
+    const back = 0.04;
+    this.path = loopPath(new THREE.Vector3(chair.position.x, 0, chair.position.z - back), 0.5, this.home.z - chair.position.z + back, side);
+    this.eyes = [];
+    root.traverse((o) => {
+      if (/_eye_/i.test(o.name)) { o.userData.sy = o.scale.y; this.eyes.push(o); }
+    });
+    this.nextBlink = 1 + Math.random() * 2;
+    this.blinkT = -1;
+    this.meshes = [];
+    root.traverse((o) => { if (o.isMesh) this.meshes.push(o); });
+    this.head = root.getObjectByName(`${who}_head`);
+    this.token = 0;
+    this.waits = [];
+    this.walk = null;
+    this.mode = "stand";
+    this.base = null;
+    this.cur = null;
+    this.fadeTo("idle", 0);
+  }
+
+  // ------------------------------------------------ playing clips
+  fadeTo(name, fade = 0.35, once = false) {
+    const next = this.actions[name];
+    const prev = this.cur;
+    if (prev === next && !once) return next;
+    next.reset();
+    next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+    next.clampWhenFinished = once;
+    next.setEffectiveTimeScale(1);
+    next.setEffectiveWeight(1);
+    next.play();
+    if (prev && prev !== next && fade > 0) prev.crossFadeTo(next, fade, false);
+    else if (prev && prev !== next) prev.stop();
+    this.cur = next;
+    if (!once) this.base = name;
+    return next;
+  }
+
+  overlay(name) {
+    const a = this.adds[name];
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = false;
+    a.setEffectiveWeight(1);
+    a.play();
+  }
+
+  until(test) {
+    return new Promise((resolve) => this.waits.push({ test, resolve }));
+  }
+
+  async once(name, tok, fade = 0.3) {
+    const a = this.fadeTo(name, fade, true);
+    const end = a.getClip().duration - 1e-3;
+    await this.until(() => tok !== this.token || a.time >= end || !a.isRunning());
+    if (tok !== this.token) return false;
+    if (name === "sit_down") this.mode = "sit";
+    if (name === "stand_up") this.mode = "stand";
+    return true;
+  }
+
+  async pause(seconds, tok) {
+    let left = seconds;
+    await this.until(() => tok !== this.token || (left -= this.lastDt) <= 0);
+    return tok === this.token;
+  }
+
+  posture() {
+    // halfway through sitting down counts as sitting, halfway through standing up as standing
+    const c = this.cur, name = c && c.getClip().name.slice(this.who.length + 1);
+    if (name === "sit_down") return c.time > c.getClip().duration / 2 ? "sit" : "stand";
+    if (name === "stand_up") return c.time > c.getClip().duration / 2 ? "stand" : "sit";
+    return this.mode;
+  }
+
+  // ------------------------------------------------ what the buttons ask for
+  async request(cmd) {
+    if (OVERLAYS.includes(cmd)) { this.overlay(cmd); return; }
+    const tok = ++this.token;
+    const p = this.posture();
+    if (cmd === "walk") {
+      if (p === "walk") { Object.assign(this.walk, { home: false, arrived: false, done: false }); return; }
+      if (p === "sit" && !(await this.once("stand_up", tok))) return;
+      this.walk = { s: 0, dir: 1, home: false, arrived: false, done: false };
+      this.mode = "walk";
+      this.fadeTo("walk", 0.3);
+      return;
+    }
+    if (p === "walk") {
+      this.walk.home = true;
+      await this.until(() => tok !== this.token || this.walk.done);
+      if (tok !== this.token) return;
+      this.walk = null;
+      this.mode = "stand";
+    }
+    const q = this.posture();
+    if (cmd === "stand") {
+      if (q === "sit" && !(await this.once("stand_up", tok))) return;
+      this.mode = "stand";
+      this.fadeTo("idle", 0.35);
+    } else if (cmd === "sit") {
+      if (q === "sit") { this.fadeTo("sit_idle", 0.45); return; }
+      if (!(await this.once("sit_down", tok, 0.3))) return;
+      this.fadeTo("sit_idle", 0.2);
+    } else if (cmd === "write") {
+      if (q === "sit") this.fadeTo(this.base === "sit_write" ? "sit_idle" : "sit_write", 0.5);
+      else this.fadeTo(this.base === "write" ? "idle" : "write", 0.5);
+    } else if (cmd === "offer") {
+      if (q === "sit" && !(await this.once("stand_up", tok))) return;
+      this.mode = "stand";
+      if (this.base !== "hold") {
+        this.fadeTo("hold", 0.45);
+        if (!(await this.pause(0.5, tok))) return;
+      }
+      if (!(await this.once("offer", tok, 0.2))) return;
+      this.fadeTo("hold", 0.2);
+    }
+  }
+
+  // ------------------------------------------------ every frame
+  update(dt) {
+    this.lastDt = dt;
+    if (this.walk) this.step(dt);
+    this.mixer.update(dt);
+    this.blink(dt);
+    if (this.waits.length) {
+      this.waits = this.waits.filter((w) => (w.test() ? (w.resolve(), false) : true));
+    }
+  }
+
+  step(dt) {
+    const w = this.walk, act = this.actions.walk;
+    const pos = Figure.p, tan = Figure.t;
+    let speed = 0, goal;
+    if (!w.arrived) {
+      if (w.home) {             // the short way home, turning round on the spot if that is shorter
+        const ahead = w.dir > 0 ? (this.path.total - w.s) % this.path.total : w.s;
+        if (ahead > this.path.total / 2 + 0.2) w.dir = -w.dir;
+      }
+      this.path.at(w.s, pos, tan);
+      goal = Math.atan2(tan.x * w.dir, tan.z * w.dir);
+      const err = angleTo(this.heading, goal);
+      speed = this.speed * Math.max(0, Math.cos(err)) ** 2;
+      let ds = speed * dt;
+      if (w.home) {
+        const ahead = w.dir > 0 ? (this.path.total - w.s) % this.path.total : w.s;
+        if (ahead <= ds || ahead < 1e-4) { ds = ahead; w.arrived = true; }
+      }
+      w.s = (((w.s + w.dir * ds) % this.path.total) + this.path.total) % this.path.total;
+      if (w.arrived) w.s = 0;
+      this.path.at(w.s, pos, tan);
+      this.root.position.copy(pos);
+    } else {
+      goal = 0;                 // facing the front again, stepping on the spot
+      if (Math.abs(angleTo(this.heading, goal)) < 0.03) { this.heading = 0; w.done = true; }
+    }
+    const err = angleTo(this.heading, goal);
+    this.heading += Math.sign(err) * Math.min(Math.abs(err), TURN_RATE * dt);
+    this.root.rotation.y = this.heading;
+    act.timeScale = 0.75 + 0.25 * (speed / this.speed);
+  }
+
+  blink(dt) {
+    if (this.blinkT >= 0) {
+      this.blinkT += dt;
+      const k = this.blinkT / 0.16;
+      const s = k >= 1 ? 1 : 1 - 0.9 * Math.sin(Math.PI * k);
+      for (const e of this.eyes) e.scale.y = e.userData.sy * s;
+      if (k >= 1) { this.blinkT = -1; this.nextBlink = 2 + Math.random() * 3.5; }
+    } else if ((this.nextBlink -= dt) <= 0) {
+      this.blinkT = 0;
+    }
+  }
+}
+Figure.p = new THREE.Vector3();
+Figure.t = new THREE.Vector3();
+
+// ---------------------------------------------------------------- loading
+function decodeGlb() {
+  const bin = atob(document.getElementById("glb").textContent.trim());
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+const figures = {};
+let selected = "sayno";
+
+new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(decodeGlb(), "", (gltf) => {
+  const root = gltf.scene;
+  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const chair = root.getObjectByName("chair");
+  for (const who of ["sayno", "visitor"]) {
+    const r = root.getObjectByName(`${who}_root`);
+    const c = chair.clone();
+    scene.add(r, c);
+    figures[who] = new Figure(who, r, gltf.animations.filter((a) => a.name.startsWith(who + "_")), c);
+  }
+  select("sayno");
+  layout(true);
+  $("loading").classList.add("gone");
+  $("tag-sayno").hidden = $("tag-visitor").hidden = false;
+}, (err) => {
+  $("loading-text").textContent = "인물을 불러오지 못했습니다. 새로고침해 주세요.";
+  console.error(err);
+});
+
+// ---------------------------------------------------------------- the panel
+const actButtons = [...document.querySelectorAll("[data-act]")];
+const tabs = [...document.querySelectorAll("[data-who]")];
+
+function select(who) {
+  selected = who;
+  for (const t of tabs) t.setAttribute("aria-selected", String(t.dataset.who === who));
+  for (const b of actButtons) b.hidden = Boolean(b.dataset.only) && b.dataset.only !== who;
+  $("role").textContent = ROLE[who];
+  $("tag-sayno").classList.toggle("on", who === "sayno");
+  $("tag-visitor").classList.toggle("on", who === "visitor");
+  refresh();
+}
+for (const t of tabs) t.addEventListener("click", () => select(t.dataset.who));
+for (const b of actButtons) {
+  b.addEventListener("click", () => { const f = figures[selected]; if (f) f.request(b.dataset.act); });
+}
+
+let lastState = "";
+function refresh() {
+  const f = figures[selected];
+  if (!f) return;
+  const p = f.posture(), base = f.base;
+  const state = `${selected}|${p}|${base}`;
+  if (state === lastState) return;
+  lastState = state;
+  const pressed = {
+    stand: p === "stand" && base === "idle",
+    walk: p === "walk",
+    sit: p === "sit",
+    write: base === "write" || base === "sit_write",
+    offer: base === "hold",
+  };
+  for (const b of actButtons) {
+    const v = pressed[b.dataset.act];
+    if (v === undefined) b.removeAttribute("aria-pressed");
+    else b.setAttribute("aria-pressed", String(v));
+  }
+}
+
+let slow = false;
+$("slow").addEventListener("click", () => {
+  slow = !slow;
+  $("slow").setAttribute("aria-pressed", String(slow));
+});
+
+// tap a figure to pick it
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let down = null;
+canvas.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener("pointerup", (e) => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+  const rect = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  let best = null;
+  for (const [who, f] of Object.entries(figures)) {
+    const hit = ray.intersectObjects(f.meshes, false)[0];
+    if (hit && (!best || hit.distance < best.d)) best = { who, d: hit.distance };
+  }
+  if (best) select(best.who);
+});
+
+// ---------------------------------------------------------------- layout: keep the figures above the panel
+// The canvas fills the screen. The camera backs off until the space the figures use (their walks round
+// the chairs, up to the name tags) and the floor's rim fit between the title and the panel, and then
+// the picture is shifted (a view offset) so that this content sits in the middle of that band.
+// On a narrow screen only the figures' space has to fit across; the floor may run off the sides.
+const FIT = [];
+for (let i = 0; i < 32; i++) {
+  const a = (i / 32) * Math.PI * 2;
+  FIT.push([new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R), false]);
+}
+for (const s of [-1, 1]) for (const x of [0.2, 1.45]) {
+  FIT.push([new THREE.Vector3(s * x, 0, 0.55), true]);       // feet at the front of a walk
+  FIT.push([new THREE.Vector3(s * x, 1.8, -0.55), true]);    // a head at the back of a walk
+  FIT.push([new THREE.Vector3(s * x, 2.08, 0.32), true]);    // a name tag at home
+}
+const MARGIN = { side: 14, top: 26, bottom: 6 };
+let fitDistance = 6;
+const pv = new THREE.Vector3();
+function extent(d, w, h) {
+  camera.position.copy(TARGET).addScaledVector(VIEW_DIR, d);
+  camera.lookAt(TARGET);
+  camera.updateMatrixWorld();
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [p, across] of FIT) {
+    pv.copy(p).project(camera);
+    const x = (pv.x * 0.5 + 0.5) * w, y = (-pv.y * 0.5 + 0.5) * h;
+    y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    if (across) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+  }
+  return { x0, x1, y0, y1 };
+}
+function layout(reset) {
+  // a resize keeps the angle the visitor turned to; the first fit (and the one after loading) resets it
+  const keep = reset === true || !layout.done ? null : camera.position.clone().sub(controls.target);
+  const w = innerWidth, h = innerHeight;
+  const card = $("panel").getBoundingClientRect();
+  const aside = card.left > w / 2;                 // the card sits at the right edge (a phone on its side)
+  const top = $("masthead").getBoundingClientRect().bottom + MARGIN.top;
+  const band = Math.max(120, (aside ? h : card.top) - MARGIN.bottom - top);
+  const left = MARGIN.side, across = Math.max(120, (aside ? card.left : w) - MARGIN.side - left);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+  let lo = 1, hi = 40;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2, e = extent(mid, w, h);
+    if (e.y1 - e.y0 <= band && e.x1 - e.x0 <= across) hi = mid; else lo = mid;
+  }
+  fitDistance = hi;
+  const e = extent(fitDistance, w, h);
+  camera.setViewOffset(w, h, (e.x0 + e.x1) / 2 - (left + across / 2), (e.y0 + e.y1) / 2 - (top + band / 2), w, h);
+  camera.updateProjectionMatrix();
+  controls.minDistance = fitDistance * 0.45;
+  controls.maxDistance = fitDistance * 1.35;
+  if (keep) {
+    const d = THREE.MathUtils.clamp(keep.length(), controls.minDistance, controls.maxDistance);
+    camera.position.copy(keep).setLength(d).add(controls.target);
+  }
+  layout.done = true;
+  controls.update();
+}
+addEventListener("resize", layout);
+layout(true);
+
+// ---------------------------------------------------------------- name tags over the heads
+const tagPos = new THREE.Vector3();
+function placeTags() {
+  const rect = canvas.getBoundingClientRect();
+  for (const [who, f] of Object.entries(figures)) {
+    const el = $(`tag-${who}`);
+    f.head.getWorldPosition(tagPos);
+    tagPos.y += 0.34;
+    tagPos.project(camera);
+    const behind = tagPos.z > 1;
+    el.style.visibility = behind ? "hidden" : "visible";
+    el.style.left = `${rect.left + (tagPos.x * 0.5 + 0.5) * rect.width}px`;
+    el.style.top = `${rect.top + (-tagPos.y * 0.5 + 0.5) * rect.height}px`;
+  }
+}
+
+// ---------------------------------------------------------------- loop
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05) * (slow ? 0.35 : 1);
+  for (const f of Object.values(figures)) f.update(dt);
+  const f = figures[selected];
+  if (f) {
+    ring.visible = true;
+    ring.position.x = f.root.position.x;
+    ring.position.z = f.root.position.z;
+    refresh();
+    placeTags();
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>

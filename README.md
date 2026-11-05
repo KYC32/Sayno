@@ -2,8 +2,8 @@
 
 A small, peaceful 3D study you visit in the browser. You write a letter about a worry,
 answer a short questionnaire, and get a reply made only of passages from
-*세이노의 가르침* (데이원, 2023) with page numbers. There is no invented Sayno dialogue: the Sayno figure (at the concept
-stage, see `blender/characters.py`) will only ever show passages from the book.
+*세이노의 가르침* (데이원, 2023) with page numbers. There is no invented Sayno dialogue: the Sayno figure (see
+`blender/characters.py` and `blender/motions.py`) will only ever show passages from the book.
 
 The flow: write a letter at the desk, pick the closest worry (matched from the letter's
 words, no AI), circle yes or no on a short questionnaire, and the open book shows the reply
@@ -27,6 +27,14 @@ author email sayno@korea.com.
   reach for the hands) and the same joints can carry glTF animations later. It renders a
   character sheet, a face comparison and both figures standing in the study.
   `blender/characters.blend` is the generated scene.
+- `blender/motions.py` computes the figures' motion clips (idle, walk, look, nod, sit down,
+  sit, stand up, writing in the notebook standing and seated, holding and offering the
+  letter) from a few curves per clip with two-bone IK for legs and arms, and exports both
+  figures, a chair and every clip to `web/assets/characters.glb` (one glTF animation per
+  figure and clip, meshopt-compressed). `--check` renders strips of poses to look at.
+- `web/characters.html` is the motion preview: pick a figure and an action, turn the view.
+  The page walks and turns the figures itself and plays look and nod on top of any other
+  clip.
 - `blender/export_glb.py` exports the study to `web/assets/study.glb`, one named mesh per
   clickable object (letter, calendar, desk_papers, bookshelf, drawer, ...). It bakes each
   mesh's surface detail (wood grain, paper, weave) and ambient occlusion into one JPEG with
@@ -41,7 +49,8 @@ author email sayno@korea.com.
 - `tools/check_passages.py <book.txt> web/data/passages.json web/data/worries.json` checks
   every quote word for word and its cited page against the book text (the book itself is not
   in this repository).
-- `tools/build_web.py` inlines the model and passages into `dist/study.html` and `dist/index.html`.
+- `tools/build_web.py` inlines the model and passages into `dist/study.html` and `dist/index.html`,
+  and the figures into `dist/characters.html` and `dist/characters/index.html`.
 
 ## Running
 
@@ -52,6 +61,8 @@ python3 blender/build_study.py --mood dusk --out renders/hi_dusk.png --samples 9
 python3 blender/compose_moods.py renders renders/moods
 python3 blender/characters.py --sheet renders/chars/sheet.png --study renders/chars/study.png --close
 python3 blender/characters.py --save blender/characters.blend
+python3 blender/motions.py --glb web/assets/characters.glb   # needs Node for glTF-Transform
+python3 blender/motions.py --check renders/motions
 python3 blender/export_glb.py web/assets/study.glb   # about 10 minutes; --quick to try things
-python3 tools/build_web.py   # then open dist/index.html
+python3 tools/build_web.py   # then open dist/index.html or dist/characters/index.html
 ```

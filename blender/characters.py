@@ -8,9 +8,10 @@ joint rotations, and the web page can later play glTF node animations on the sam
     python3 blender/characters.py --study renders/char_study.png [--close] [--mood night]
     python3 blender/characters.py --save blender/characters.blend
 
-By default Sayno has no face and the visitor has dot eyes (--eyes none|visitor|both). Sayno
-let a newspaper print a caricature instead of his photograph (p.6), and in twenty years showed
-readers nothing but photos of his model bicycles (p.287).
+Both have dot eyes, as Yoonchan chose on 2026-11-05 (--eyes none|visitor|both renders the other
+options). Sayno let a newspaper print a caricature instead of his photograph (p.6), and in twenty
+years showed readers nothing but photos of his model bicycles (p.287), so his face stays a toy's
+face: two dots and grey brows, nothing drawn from a likeness.
 
 What the book says about him and is used here: thin, a 30-inch waist at fifty (p.64); no
 luxury brands; Montblanc and Waterman fountain pens, because he likes to scribble, and a metal
@@ -432,6 +433,8 @@ def attach(ob, joint):
 
 PEN_NIB = Vector((0.0, -0.022, -0.104))                      # the nib, in right-hand (wrist) space
 PEN_BACK = Vector((-0.42, -0.5, 0.76)).normalized()          # from the nib back over the web of the hand
+# the left hand under the notebook's left side, in notebook space: palm centre, fingers, palm normal
+NOTEBOOK_GRIP = (Vector((-0.07, 0.0, -0.034)), Vector((1, -0.1, 0)), Vector((0, 0, 1)))
 
 
 def sayno_props(F):
@@ -474,8 +477,13 @@ def sayno_props(F):
     F.add("wrist_L", bs.cyl(f"{N}_watch_case", 0.019, 0.009, (0.03, 0, -0.011), steel, n=20, rot=(0, math.pi / 2, 0)))
     F.add("wrist_L", bs.cyl(f"{N}_watch_dial", 0.015, 0.002, (0.0352, 0, -0.011), dial, n=20, rot=(0, math.pi / 2, 0)))
 
-    # fountain pen in the right hand: black, gold nib, band and clip (drawn a little large to read)
+    # fountain pen in the right hand: black, gold nib, band and clip (drawn a little large to read),
+    # under one empty so an animation can put it away
     pen, gold = cmat("pen", rough=0.18), cmat("gold", rough=0.25, metal=1.0)
+    holder = bpy.data.objects.new(f"{N}_penholder", None)
+    bs._link(holder)
+    holder.parent = F.j["wrist_R"]
+    F.pen = holder
     L = 0.17
     body = [(-L / 2, 0.0, 0.0), (-L / 2 + 0.003, 0.0058, 0.0058), (-L / 2 + 0.01, 0.0082, 0.0082),
             (0.03, 0.0082, 0.0082), (0.048, 0.0071, 0.0071), (0.056, 0.0062, 0.0062)]
@@ -487,11 +495,13 @@ def sayno_props(F):
                            ("pen_band", [(-0.004, 0.0088, 0.0088), (0.004, 0.0088, 0.0088)], gold),
                            ("pen_top", [(-L / 2 - 0.002, 0.0, 0.0), (-L / 2 + 0.002, 0.0048, 0.0048),
                                         (-L / 2 + 0.008, 0.006, 0.006)], gold)):
-        parts[name] = F.add("wrist_R", solid(f"{N}_{name}", secs_, m, loc=loc, rot=rot, n=14))
+        parts[name] = solid(f"{N}_{name}", secs_, m, loc=loc, rot=rot, n=14)
+        parts[name].parent = holder
     clip = bs.box(f"{N}_pen_clip", (0.003, 0.002, 0.055), (0, -0.0092, -0.05), gold, bevel=0.0007, segs=1)
     clip.parent = parts["pen"]
 
-    # a small notebook, open: leather cover and two pages with a few lines already written
+    # a small notebook, open: leather cover and two pages, the left one full, two lines on the right.
+    # Notebook space: x to the writer's right, y away from him (the top of the pages), z out of the page.
     book = bpy.data.objects.new(f"{N}_notebook", None)
     bs._link(book)
     book.parent = F.j["root"]
@@ -502,11 +512,11 @@ def sayno_props(F):
                            bevel=0.0015, segs=1, rot=(0, sx * math.radians(-3), 0)))
     lines = bs.Batch(f"{N}_nb_ink")
     for k, wl in enumerate((0.08, 0.072, 0.085, 0.05, 0.078, 0.064, 0.03)):
-        lines.box((wl, 0.0024, 0.0008), (0.058 - 0.04 + wl / 2 - 0.0, 0.055 - k * 0.017, 0.0042), ink,
-                  rot=(0, math.radians(-3), 0))
-    for k, wl in enumerate((0.07, 0.04)):
-        lines.box((wl, 0.0024, 0.0008), (-0.058 - 0.04 + wl / 2, 0.055 - k * 0.017, 0.0042), ink,
+        lines.box((wl, 0.0024, 0.0008), (-0.104 + wl / 2, 0.055 - k * 0.017, 0.0042), ink,
                   rot=(0, math.radians(3), 0))
+    for k, wl in enumerate((0.07, 0.04)):
+        lines.box((wl, 0.0024, 0.0008), (0.012 + wl / 2, 0.055 - k * 0.017, 0.0042), ink,
+                  rot=(0, math.radians(-3), 0))
     bits.append(lines.make())
     for b in bits:
         b.parent = book
@@ -545,14 +555,14 @@ def make_sayno(eyes=False):
     update()
     zc = F.j["spine"].matrix_world.translation.z + 0.13
     n = Vector((0.05, 0.62, 0.78)).normalized()                # the page faces him and the ceiling
-    F.notebook.matrix_world = Matrix.Translation((0.035, -0.255, zc)) @ basis((1, 0, -0.05), n).to_4x4()
+    F.notebook.matrix_world = Matrix.Translation((0.035, -0.255, zc)) @ basis((-1, 0, 0.05), n).to_4x4()
     update()
     B = F.notebook.matrix_world
     Br = B.to_3x3()
-    hold(F, "L", B @ Vector((0.07, 0.0, -0.034)), (0, 0, -0.05),
-         hand_frame(Br @ Vector((-1, 0.1, 0)), Br @ Vector((0, 0, 1)), "L"), pole=(1, 0.6, -1))
+    hold(F, "L", B @ NOTEBOOK_GRIP[0], (0, 0, -0.05),
+         hand_frame(Br @ NOTEBOOK_GRIP[1], Br @ NOTEBOOK_GRIP[2], "L"), pole=(1, 0.6, -1))
     attach(F.notebook, F.j["wrist_L"])
-    nib = B @ Vector((-0.06, 0.012, 0.0045))
+    nib = B @ Vector((0.06, 0.019, 0.0045))                    # the third line of the right-hand page
     R = turn_to(PEN_BACK, Vector((-0.45, 0.42, 0.79)), (0, 0, -1), Vector((0.2, -0.5, -0.84)))
     hold(F, "R", nib, PEN_NIB, R, pole=(-1, 0.7, -0.8))
     return F
@@ -633,7 +643,7 @@ def rename(F, k):
 EYES = {"none": (False, False), "visitor": (False, True), "both": (True, True)}   # (Sayno, visitor)
 
 
-def sheet(eyes="visitor"):
+def sheet(eyes="both"):
     fresh()
     plain_stage()
     bs.COLL = bs._collection("CHARACTERS")
@@ -657,7 +667,7 @@ def faces():
     camera("CAM_faces", (0.0, -4.3, 1.5), (0.0, 0.0, 1.2), lens=70)
 
 
-def in_study(mood="dusk", eyes="visitor", close=False):
+def in_study(mood="dusk", eyes="both", close=False):
     """Both figures in the study, seen from the game's camera. They stand on a line across the
     screen, each turned a little towards the camera, the way actors cheat out on a stage."""
     fresh()
@@ -688,7 +698,7 @@ def main():
     ap.add_argument("--study")
     ap.add_argument("--close", action="store_true")
     ap.add_argument("--mood", default="dusk", choices=list(bs.MOODS))
-    ap.add_argument("--eyes", default="visitor", choices=list(EYES), help="who has dot eyes")
+    ap.add_argument("--eyes", default="both", choices=list(EYES), help="who has dot eyes")
     ap.add_argument("--save")
     ap.add_argument("--samples", type=int, default=64)
     ap.add_argument("--res", default="1600x1200")
