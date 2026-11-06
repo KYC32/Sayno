@@ -27,6 +27,16 @@ author email sayno@korea.com.
   reach for the hands) and the same joints can carry glTF animations later. It renders a
   character sheet, a face comparison and both figures standing in the study.
   `blender/characters.blend` is the generated scene.
+- `blender/build_house.py` grows the study into a small house, at the concept stage: the study
+  as built (plus a place to listen to music), a plain waiting room by the front door where the
+  visitor writes the letter, and a garage with an old silver two-seater drawn without brand
+  marks, shelves of fourteen cubbies for model bicycles, a workbench, the visitor's bicycle, and
+  a corner that recalls the rented garage Sayno lived in (a board desk on dog-leash chains, the
+  words he wrote on the wall, pp.324-325). It is a cutaway: front walls stop at 0.3 m and the
+  walls between rooms at 0.95 m. It renders the whole house or one room (`--view`), with both
+  figures. The words on the garage wall need a Korean brush-script font passed as `--font`
+  (East Sea Dokdo, SIL OFL, from github.com/google/fonts); it is not in this repository.
+  `blender/house.blend` is the generated scene (without the words).
 - `blender/motions.py` computes the figures' motion clips (idle, walk, look, nod, sit down,
   sit, stand up, writing in the notebook standing and seated, holding and offering the
   letter) from a few curves per clip with two-bone IK for legs and arms, and exports both
@@ -61,6 +71,9 @@ python3 blender/build_study.py --mood dusk --out renders/hi_dusk.png --samples 9
 python3 blender/compose_moods.py renders renders/moods
 python3 blender/characters.py --sheet renders/chars/sheet.png --study renders/chars/study.png --close
 python3 blender/characters.py --save blender/characters.blend
+python3 blender/build_house.py --out renders/house/overview.png --font EastSeaDokdo-Regular.ttf
+python3 blender/build_house.py --view garage --out renders/house/garage.png --font EastSeaDokdo-Regular.ttf
+python3 blender/build_house.py --save blender/house.blend
 python3 blender/motions.py --glb web/assets/characters.glb   # needs Node for glTF-Transform
 python3 blender/motions.py --check renders/motions
 python3 blender/export_glb.py web/assets/study.glb   # about 10 minutes; --quick to try things
